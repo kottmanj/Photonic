@@ -107,7 +107,7 @@ class PhotonicSetup:
         result += str(self.paths)
         return result
 
-    def add_measurements(self):
+    def _add_measurements(self):
         self._setup += gates.Measurement(target=self.paths.qubits)
 
     def simulate_wavefunction(self, initial_state: [str,PhotonicStateVector] = None, simulator=None) -> PhotonicStateVector:
@@ -138,7 +138,7 @@ class PhotonicSetup:
         if simulator is None:
             simulator = SimulatorCirq()
 
-        self.add_measurements()
+        self._add_measurements()
 
         simresult = simulator.run(abstract_circuit=iprep+self.setup, samples=samples)
         return PhotonicStateVector(paths=self.paths, state=simresult.measurements[''])
@@ -208,7 +208,7 @@ class PhotonicSetup:
         self._setup += circuit
         return self
 
-    def Mirror(self, path: str):
+    def add_mirror(self, path: str):
         p = self.paths[path]
         result = QCircuit()
         passed_keys = [0]
@@ -229,7 +229,7 @@ class PhotonicSetup:
         self._setup += result
         return self
 
-    def DovePrism(self, path: str, mode: int, t):
+    def add_doveprism(self, path: str, mode: int, t):
         """
         :param target: The PhotonicMode onto which the Prism acts
         :param t: The phase is parametrized by t: phase=exp(i*pi*t)
@@ -238,7 +238,7 @@ class PhotonicSetup:
         self._setup += QuditS(target=self.paths[path][mode], t=t)
         return self
 
-    def Hologram(self, path: str):
+    def add_hologram(self, path: str):
         p = self.paths[path]
         sorted_keys = [k for k in p.keys()]
         sorted_keys.sort(reverse=True)
@@ -283,7 +283,7 @@ class PhotonicSetup:
         self._setup += result
         return self
 
-    def BeamSplitter(self, path_a: str, path_b: str, t=0.25, steps: int = 1):
+    def add_beamsplitter(self, path_a: str, path_b: str, t=0.25, steps: int = 1):
         """
         :param path_a: name of path a
         :param path_b: name of path b

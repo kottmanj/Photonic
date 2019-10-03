@@ -46,8 +46,8 @@ if __name__ == "__main__":
     """
 
     setup = PhotonicSetup(pathnames=['a', 'b'], S=S, qpm=qpm)
-    setup.BeamSplitter(path_a='a', path_b='b', t=0.25, steps=trotter_steps)
-    setup.DovePrism(path='a', mode=0, t=1.0)
-    setup.BeamSplitter(path_a='a', path_b='b', t=0.25, steps=trotter_steps)
+    setup.add_beamsplitter(path_a='a', path_b='b', t=0.25, steps=trotter_steps)
+    setup.add_doveprism(path='a', mode=0, t=1.0)
+    setup.add_beamsplitter(path_a='a', path_b='b', t=0.25, steps=trotter_steps)
     counts=setup.run(initial_state=istate, samples=samples, simulator=simulator)
     counts.plot(title="Parity Sort: Initial state was " + istate)

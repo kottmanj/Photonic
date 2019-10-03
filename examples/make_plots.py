@@ -15,7 +15,7 @@ class DoIt:
             steps = 1
 
         setup = PhotonicSetup(pathnames=['a', 'b'], S=self.S, qpm=self.qpm)
-        setup.BeamSplitter(path_a='a', path_b='b', phi=pi / 4, steps=steps)
+        setup.add_beamsplitter(path_a='a', path_b='b', phi=pi / 4, steps=steps)
         start = PhotonicStateVector.from_string(paths=setup.paths, string="1.0|1>_a|1>_b")
         fac = str(1.0 / sqrt(2))
         expected = PhotonicStateVector.from_string(paths=setup.paths,

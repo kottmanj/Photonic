@@ -40,7 +40,7 @@ if __name__ == "__main__":
     setup = PhotonicSetup(pathnames=['a', 'b'], S=S, qpm=qpm)
 
     # the beam splitter is parametrized as phi=i*pi*t
-    setup.BeamSplitter(path_a='a', path_b='b', t=0.25, steps=trotter_steps)
+    setup.add_beamsplitter(path_a='a', path_b='b', t=0.25, steps=trotter_steps)
 
     # result of the simulation
     wfn = setup.simulate_wavefunction(initial_state="+1.0|1>_a|1>_b", simulator=simulator)

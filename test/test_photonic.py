@@ -59,7 +59,7 @@ def test_hologram(silent=True):
     S = 2
     qpm = 2
     setup = PhotonicSetup(pathnames=['a'], S=S, qpm=qpm)
-    setup.Hologram(path='a')
+    setup.add_hologram(path='a')
 
     states = [
         PhotonicStateVector.from_string(paths=setup.paths, string="1.0|20000>_a"),  # 2 photons in -2
@@ -88,7 +88,7 @@ def test_mirror(silent=True):
 
     setup = PhotonicSetup(pathnames=['a'], S=S, qpm=qpm)
     paths = setup.paths
-    setup.Mirror(path='a')
+    setup.add_mirror(path='a')
 
     statesx = [
         PhotonicStateVector.from_string(paths=paths, string="1.0|20000>_a"),  # 2 photons in -2
@@ -128,7 +128,7 @@ def test_dove_prism(silent=True):
     setup = PhotonicSetup(pathnames=['a'], S=S, qpm=qpm, qubits=qubits)
     paths = setup.paths
 
-    setup.DovePrism(path='a', mode=0, t=t)
+    setup.add_doveprism(path='a', mode=0, t=t)
 
     states = [
         PhotonicStateVector.from_string(paths=paths, string="1.0|0>_a"),  # 0 photons in the mode
