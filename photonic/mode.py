@@ -113,6 +113,15 @@ class PhotonicPaths:
             result += str(name) + " --> " + str(p) + "\n"
         return result
 
+    def __eq__(self, other):
+        if self.S != other.S:
+            return False
+        elif self.qpm != other.qpm:
+            return False
+        elif self.qubits != other.qubits:
+            return False
+        return True
+
 
 class PhotonicStateVector:
     """
@@ -239,10 +248,15 @@ class PhotonicStateVector:
     def __rmul__(self, other):
         return PhotonicStateVector(paths=self._paths, state=other * deepcopy(self._state))
 
+    def __iadd__(self, other):
+        assert (self.paths == other.paths)
+        self._state += other.state
+        return self
+
     def inner(self, other):
         return self._state.inner(other._state)
 
-    def plot(self, title: str = None):
+    def plot(self, title: str = None, label: str=None, filename: str = None):
         from matplotlib import pyplot as plt
 
         if title is not None:
@@ -254,8 +268,21 @@ class PhotonicStateVector:
         for k, v in self._state.items():
             values.append(v)
             names.append(self.interpret_bitstring(i=k))
-        plt.bar(names, values)
-        plt.show()
+        plt.bar(names, values, label=label)
+        if label is not None:
+            plt.legend()
+        if filename is not None:
+            plt.savefig(filename, dpi=None, facecolor='w', edgecolor='w',
+                        orientation='landscape', papertype=None, format=None,
+                        transparent=False, bbox_inches='tight', pad_inches=0.1,
+                        metadata=None)
+            with open(filename+"_data", 'a+') as f:
+                f.write("names \t\t values\n")
+                for i,v in enumerate(values):
+                    f.write(str(names[i]) + "\t\t"+ str(values[i])+"\n")
+                f.write("end\n")
+        else:
+            plt.show
 
 
 if __name__ == "__main__":

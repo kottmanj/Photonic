@@ -283,11 +283,13 @@ class PhotonicSetup:
         self._setup += result
         return self
 
-    def add_beamsplitter(self, path_a: str, path_b: str, t=0.25, steps: int = 1):
+
+    def add_beamsplitter(self, path_a: str, path_b: str, t=0.25, steps: int = 1, randomize: bool = False):
         """
         :param path_a: name of path a
         :param path_b: name of path b
         :param t: parametrizes the angle: phi = i*pi*t
+        :param randomize: randomized the order in which the paulistrings are processed in the Trotter decomposition
         :param steps:
         :return:
         """
@@ -301,11 +303,19 @@ class PhotonicSetup:
         b = self.paths[path_b]
 
         result = QCircuit()
-
+        from random import randint
+        order = 0
+        if randomize:
+            order = randint(0,1)
         for mode in a.keys():
-            hamiltonian = creation(qubits=a[mode].qubits) * anihilation(qubits=b[mode].qubits)
-            hamiltonian -= creation(qubits=b[mode].qubits) * anihilation(qubits=a[mode].qubits)
-            result += compile_trotter_evolution(hamiltonian=hamiltonian, steps=steps, t=phi)
+            hamiltonian = QubitHamiltonian.init_zero()
+            if order == 0:
+                hamiltonian += creation(qubits=a[mode].qubits) * anihilation(qubits=b[mode].qubits)
+                hamiltonian -= creation(qubits=b[mode].qubits) * anihilation(qubits=a[mode].qubits)
+            else:
+                hamiltonian -= creation(qubits=b[mode].qubits) * anihilation(qubits=a[mode].qubits)
+                hamiltonian += creation(qubits=a[mode].qubits) * anihilation(qubits=b[mode].qubits)
+            result += compile_trotter_evolution(hamiltonian=hamiltonian, steps=steps, t=phi, randomize=False)
 
         self._setup += result
         return self
