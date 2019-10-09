@@ -284,7 +284,7 @@ class PhotonicSetup:
         return self
 
 
-    def add_beamsplitter(self, path_a: str, path_b: str, t=0.25, steps: int = 1, randomize: bool = False):
+    def add_beamsplitter(self, path_a: str, path_b: str, t=0.25, steps: int = 1, order=None):
         """
         :param path_a: name of path a
         :param path_b: name of path b
@@ -304,10 +304,14 @@ class PhotonicSetup:
 
         result = QCircuit()
         from random import randint
-        order = 0
-        if randomize:
-            order = randint(0,1)
+
+        if order is None:
+            order = 0
+
         for mode in a.keys():
+            if order == "randomize":
+                order = randint(0, 1)
+
             hamiltonian = QubitHamiltonian.init_zero()
             if order == 0:
                 hamiltonian += creation(qubits=a[mode].qubits) * anihilation(qubits=b[mode].qubits)

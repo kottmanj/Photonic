@@ -34,8 +34,11 @@ class DoIt:
     def __call__(self, *args) -> PhotonicStateVector:
         setup = PhotonicSetup(pathnames=['a', 'b'], S=self.S, qpm=self.qpm)
 
+        order = 0
+        if self.randomize is True:
+            order = 'randomize'
         # the beam splitter is parametrized as phi=i*pi*t
-        setup.add_beamsplitter(path_a='a', path_b='b', t=0.25, steps=self.trotter_steps, randomize=self.randomize)
+        setup.add_beamsplitter(path_a='a', path_b='b', t=0.25, steps=self.trotter_steps, order=order)
 
         return setup.run(samples=self.samples, initial_state=self.initial_state, simulator=self.simulator)
 
@@ -43,7 +46,7 @@ class DoIt:
 if __name__ == "__main__":
 
     runs = 2
-    nproc = None
+    nproc = 3
 
     print("CPU Count is: ", mp.cpu_count())
     if nproc is None:
@@ -56,9 +59,9 @@ if __name__ == "__main__":
     """
     parameters = {
         'S': 0,  # Modes will run from -S ... 0 ... +S
-        'qpm': 3,  # Qubits per mode
+        'qpm': 2,  # Qubits per mode
         'initial_state': "|1>_a|1>_b",  # Notation has to be consistent with your S
-        'trotter_steps': 2,  # number of trotter steps for the BeamSplitter
+        'trotter_steps': 1,  # number of trotter steps for the BeamSplitter
         'randomize': True,  # Do or do not randomize
         'samples': 1,  # number of samples to simulate
         'simulator': SimulatorQiskit()  # Pick the Simulator
@@ -72,13 +75,17 @@ if __name__ == "__main__":
     counts = pool.map(func=DoIt(**parameters), iterable=range(0, runs))
     print(type(counts), "\n", counts)
 
+    print("collected counts:\n", counts)
+
     accumulate = None
     for i,c in enumerate(counts):
         if accumulate is None:
             accumulate = c
         else:
             accumulate += c
-    counts = c
+
+    counts = accumulate
+    print("counts after accumulation:\n", counts)
 
     counts.plot(title="HOM-Counts for initial state " + parameters['initial_state'],
                 label="steps=" + str(parameters['trotter_steps']) + "\nrandomized=" + str(
