@@ -310,12 +310,17 @@ class PhotonicSetup:
             order = 0
 
         modes = [k for k in a.keys()]
-        if order in ["randomize", "full_randomize"]:
+        if order in ["randomize", "full_randomize", "total_randomization"]:
             shuffle(modes)
+
+        total_randomization = False
 
         rr = False
         if order == "full_randomize":
             rr = True
+        if order == "total_randomization":
+            rr = True
+            total_randomization = True
 
         for mode in modes:
             if order == "randomize":
@@ -329,6 +334,9 @@ class PhotonicSetup:
                 hamiltonian -= creation(qubits=b[mode].qubits) * anihilation(qubits=a[mode].qubits)
                 hamiltonian += creation(qubits=a[mode].qubits) * anihilation(qubits=b[mode].qubits)
             result += compile_trotter_evolution(hamiltonian=hamiltonian, steps=steps, t=phi, randomize=rr)
+
+        if total_randomization:
+            shuffle(result.gates)
 
         self._setup += result
         return self
