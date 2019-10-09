@@ -9,6 +9,7 @@ from openvqe.circuit.compiler import compile_trotter_evolution
 from openvqe import BitString
 from openvqe.simulator.simulator_cirq import SimulatorCirq
 from openvqe.tools.convenience import number_to_string
+from random import shuffle
 
 
 def QuditS(target: PhotonicMode, t):
@@ -308,7 +309,11 @@ class PhotonicSetup:
         if order is None:
             order = 0
 
-        for mode in a.keys():
+        modes = [k for k in a.keys()]
+        if order == "randomize":
+            modes = shuffle(modes)
+
+        for mode in modes:
             if order == "randomize":
                 order = randint(0, 1)
 
