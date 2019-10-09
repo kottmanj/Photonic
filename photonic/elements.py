@@ -311,7 +311,7 @@ class PhotonicSetup:
 
         modes = [k for k in a.keys()]
         if order == "randomize":
-            modes = shuffle(modes)
+            shuffle(modes)
 
         for mode in modes:
             if order == "randomize":
