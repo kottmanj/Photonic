@@ -3,12 +3,10 @@ from photonic.mode import PhotonicMode, PhotonicPaths, PhotonicStateVector
 from numpy import pi, sqrt
 from openvqe.circuit import gates, QCircuit
 from openvqe import BitNumbering
-from typing import Dict
-from openvqe.hamiltonian import decompose_transfer_operator, QubitHamiltonian
-from openvqe.circuit.compiler import compile_trotter_evolution
-from openvqe import BitString
+from openvqe.hamiltonian import QubitHamiltonian
+from openvqe.hamiltonian.paulis import decompose_transfer_operator
+from openvqe.circuit.exponential_gate import DecompositionFirstOrderTrotter
 from openvqe.simulator.simulator_cirq import SimulatorCirq
-from openvqe.tools.convenience import number_to_string
 from random import shuffle
 
 
@@ -82,12 +80,12 @@ class PhotonicSetup:
     def setup(self):
         return self._setup
 
-    def print_circuit(self, simulator = None):
+    def print_circuit(self, simulator=None):
         if simulator is None:
             simulator = SimulatorCirq()
         print(simulator.create_circuit(abstract_circuit=self.setup))
 
-    def initialize_state(self, state:str) -> PhotonicStateVector:
+    def initialize_state(self, state: str) -> PhotonicStateVector:
         return PhotonicStateVector.from_string(paths=self.paths, string=state)
 
     def __init__(self, pathnames: List[str], S: int, qpm: int, qubits: List[int] = None, setup: QCircuit = None):
@@ -111,7 +109,8 @@ class PhotonicSetup:
     def _add_measurements(self):
         self._setup += gates.Measurement(target=self.paths.qubits)
 
-    def simulate_wavefunction(self, initial_state: [str,PhotonicStateVector] = None, simulator=None) -> PhotonicStateVector:
+    def simulate_wavefunction(self, initial_state: [str, PhotonicStateVector] = None,
+                              simulator=None) -> PhotonicStateVector:
 
         if isinstance(initial_state, str):
             initial_state = PhotonicStateVector.from_string(paths=self.paths, string=initial_state)
@@ -126,22 +125,22 @@ class PhotonicSetup:
         simresult = simulator.simulate_wavefunction(abstract_circuit=self.setup, initial_state=initial_state)
         return PhotonicStateVector(paths=self.paths, state=simresult.wavefunction)
 
-    def run(self, samples:int=1, initial_state: str = None, simulator=None):
+    def run(self, samples: int = 1, initial_state: str = None, simulator=None):
         iprep = QCircuit()
         if initial_state is not None:
             state = self.initialize_state(state=initial_state)
             # can only do product states right now, alltough more general ones are possible
-            assert(len(state.state)==1)
+            assert (len(state.state) == 1)
             key = [k for k in state.state.keys()][0]
-            for i,q in enumerate(key.array):
-                if q==1:
+            for i, q in enumerate(key.array):
+                if q == 1:
                     iprep += gates.X(target=i)
         if simulator is None:
             simulator = SimulatorCirq()
 
         self._add_measurements()
 
-        simresult = simulator.run(abstract_circuit=iprep+self.setup, samples=samples)
+        simresult = simulator.run(abstract_circuit=iprep + self.setup, samples=samples)
         return PhotonicStateVector(paths=self.paths, state=simresult.measurements[''])
 
     @classmethod
@@ -284,62 +283,42 @@ class PhotonicSetup:
         self._setup += result
         return self
 
-
-    def add_beamsplitter(self, path_a: str, path_b: str, t=0.25, steps: int = 1, order=None):
+    def add_beamsplitter(self, path_a: str, path_b: str, t=0.5, steps: int = 1, join_components: bool = True,
+                         randomize_component_order: bool = True, randomize: bool = True):
         """
         :param path_a: name of path a
         :param path_b: name of path b
         :param t: parametrizes the angle: phi = i*pi*t
-        :param randomize: randomized the order in which the paulistrings are processed in the Trotter decomposition
         :param steps:
+        :param join_components: convenience to play around with Trotterization, see DecomposeFirstOrderTrotter doc of OpenVQE
+        :param randomize_component_order: see before
+        :param randomize: see before
         :return:
         """
         assert (len(self.paths[path_a]) == len(self.paths[path_b]))
         assert (self.paths[path_a].keys() == self.paths[path_b].keys())
 
-        phi = 1.0j*pi*t
+        phi = 1.0j * pi * t
 
         # convenience
         a = self.paths[path_a]
         b = self.paths[path_b]
 
-        result = QCircuit()
-        from random import randint
-
-        if order is None:
-            order = 0
-
         modes = [k for k in a.keys()]
-        if order in ["randomize", "full_randomize", "total_randomization"]:
-            shuffle(modes)
 
-        total_randomization = False
+        trotter = DecompositionFirstOrderTrotter(steps=steps, t=1.0, join_components=join_components,
+                                                 randomize_component_order=randomize_component_order,
+                                                 randomize=randomize)
 
-        rr = False
-        if order == "full_randomize":
-            rr = True
-        if order == "total_randomization":
-            rr = True
-            total_randomization = True
-
+        generators = []
         for mode in modes:
-            if order == "randomize":
-                order = randint(0, 1)
-
             hamiltonian = QubitHamiltonian.init_zero()
-            if order == 0:
-                hamiltonian += creation(qubits=a[mode].qubits) * anihilation(qubits=b[mode].qubits)
-                hamiltonian -= creation(qubits=b[mode].qubits) * anihilation(qubits=a[mode].qubits)
-            else:
-                hamiltonian -= creation(qubits=b[mode].qubits) * anihilation(qubits=a[mode].qubits)
-                hamiltonian += creation(qubits=a[mode].qubits) * anihilation(qubits=b[mode].qubits)
-            result += compile_trotter_evolution(hamiltonian=hamiltonian, steps=steps, t=phi, randomize=rr)
+            hamiltonian += creation(qubits=a[mode].qubits) * anihilation(qubits=b[mode].qubits)
+            hamiltonian -= creation(qubits=b[mode].qubits) * anihilation(qubits=a[mode].qubits)
+            generators.append(phi * hamiltonian)
 
-        if total_randomization:
-            shuffle(result.gates)
-
+        result = trotter(generators=generators)
         self._setup += result
+
+        # return self for chaining
         return self
-
-
-

@@ -17,6 +17,12 @@ import multiprocessing as mp
 """
 Here we creating Hong-Ou-Mandel States with a single beam splitter
 And compare Trotter decompositions where the order has been kept fixed vs randomized order
+
+This is an old version which will not run anymore
+keeping it for now
+
+See OpenVQE/examples/randomized_trotter... for more or less the same example
+for a single mode and a bit easier
 """
 
 
@@ -38,7 +44,7 @@ class DoIt:
         if self.randomize is True:
             order = 'randomize'
         # the beam splitter is parametrized as phi=i*pi*t
-        setup.add_beamsplitter(path_a='a', path_b='b', t=0.25, steps=self.trotter_steps, order=order)
+        setup.add_beamsplitter(path_a='a', path_b='b', t=0.5, steps=self.trotter_steps, order=order)
 
         return setup.run(samples=self.samples, initial_state=self.initial_state, simulator=self.simulator)
 
