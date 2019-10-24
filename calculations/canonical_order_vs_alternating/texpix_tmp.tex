@@ -1,0 +1,118 @@
+
+\documentclass[]{standalone}
+
+\usepackage[english]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{xspace}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{tikz}
+
+\usepackage{qcircuit}
+
+
+\usepackage{hyperref}
+\hypersetup{
+	pdflang=en,
+	colorlinks=true,
+	%filecolor=magenta,      
+	%urlcolor=cyan,
+	allcolors=blue,
+	linkcolor=blue,
+	bookmarksnumbered=true
+}
+
+
+\title{stuff}
+\author{jsk}
+\date{\today}
+
+\setlength\parindent{0pt}
+
+
+% operators on combined qubit space
+\newcommand{\op}[1]{\ensuremath{\mathcal{#1}}}
+\newcommand{\ket}[1]{\ensuremath{\lvert #1 \rangle}}
+\newcommand{\bra}[1]{\ensuremath{\langle #1 \rvert}}
+\newcommand{\comment}[1]{--\textit{#1}--}
+\newcommand{\shrink}[1]{\ensuremath{_{#1}}}
+
+\newcommand{\lr}[1]{\ensuremath{\left( #1 \right)}}
+
+%pauli shortcut
+\newcommand{\plus}{\ensuremath{\sigma_+}}
+\newcommand{\minus}{\ensuremath{\sigma_-}}
+\newcommand{\z}{\ensuremath{\sigma_z}}
+
+% second quantized operators
+\newcommand{\cop}[1]{\ensuremath{\operatorname{a}^\dagger_{#1}}}
+\newcommand{\aop}[1]{\ensuremath{\operatorname{a}^{\phantom{\dagger}}_{#1}}}
+
+\begin{document} 
+
+
+
+\foreach \S in {0}
+{
+\begin{tabular}{c}
+	\textit{S = \S}\\
+	\foreach \qpm in {2,3}
+	{
+		\foreach \steps in {1,2,5}{
+			\includegraphics[width=0.25\textwidth]{hom_S_\S_qpm_\qpm_steps_\steps_randomized_0_samples_1.pdf}
+		}
+	}
+\\
+        \foreach \qpm in {2,3}
+        {
+                \foreach \steps in {1,2,5}{
+                        \includegraphics[width=0.25\textwidth]{hom_S_\S_qpm_\qpm_steps_\steps_alternating_1.pdf}
+                }
+        }
+\\
+        \foreach \qpm in {2,3}
+        {
+                \foreach \steps in {1,2,5}{
+                        \includegraphics[width=0.25\textwidth]{many/hom_S_\S_qpm_\qpm_steps_\steps_alternating_1.pdf}
+                }
+        }
+\\
+\end{tabular}
+}
+
+\vspace{1cm}
+\\
+
+
+\foreach \S in {1}
+{
+\begin{tabular}{c}
+        \textit{S = \S}\\
+        \foreach \qpm in {2,3}
+        {
+                \foreach \steps in {1,2,5}{
+                        \includegraphics[width=0.25\textwidth]{hom_S_\S_qpm_\qpm_steps_\steps_randomized_0_samples_1.pdf}
+                }
+        }
+\\
+        \foreach \qpm in {2,3}
+        {
+                \foreach \steps in {1,2,5}{
+                        \includegraphics[width=0.25\textwidth]{hom_S_\S_qpm_\qpm_steps_\steps_alternating_1.pdf}
+                }
+        }
+\\
+        \foreach \qpm in {2,3}
+        {
+                \foreach \steps in {1,2,5}{
+                        \includegraphics[width=0.25\textwidth]{many/hom_S_\S_qpm_\qpm_steps_\steps_alternating_1.pdf}
+                }
+        }
+\\
+\end{tabular}
+}
+
+
+\end{document}

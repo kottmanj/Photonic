@@ -1,0 +1,58 @@
+
+def read_data(filename:str):
+    result = dict()
+    with open(filename, 'r') as file:
+        for line in file:
+            if 'names' in line:
+                continue
+            if 'end' in line:
+                break
+            tmp = line.split('\t\t')
+            state = tmp[0]
+            count = tmp[1]
+            result[state] = int(count)
+    return result
+
+def get_filenames():
+    result = []
+    for S in [0,1]:
+        for qpm in [2,3]:
+                for randomize in [0,1]:
+                        for trotter_steps in [1,2,5]:
+                            tmp = {"S":S, "qpm":qpm, "randomize":randomize, "trotter_steps":trotter_steps}
+                            filename="hom_S_"+str(S)+"_qpm_"+str(qpm)+"_steps_" + str(trotter_steps) + "_randomized_" + str(randomize) + "_samples_" + str(1)
+                            tmp["filename"]=filename
+                            result.append(tmp)
+    return result
+
+def mask_data(data:dict, valid_keys:list = ["|2>_a|0>_b","|0>_a|2>_b", "|020>_a|000>_b", "|000>_a|020>_b"]):
+    masked_data = dict()
+    masked_data['invalid']=0
+    for k, v in data.items():
+        if k in valid_keys:
+            masked_data[k]=v
+        else:
+            masked_data['invalid']+=v
+    return masked_data
+
+if __name__ == "__main__":
+    
+    filenames = get_filenames()
+    for f in filenames:
+        data = read_data(filename=f['filename']+".pdf_data")
+        label=""
+        for k,v in f.items():
+            label+= str(k)+"="+str(v)+""
+        
+        from matplotlib import pyplot as plt
+        plt.ylabel("counts")
+        plt.xlabel("state")
+        masked_data = mask_data(data)
+        names = [k for k in masked_data.keys()]
+        values = [v for v in masked_data.values()]
+        print("names=", names, "\nvalues=", values)
+        plt.bar(names, values, label=label)
+        plt.savefig(fname=f['filename']+".pdf")
+
+
+

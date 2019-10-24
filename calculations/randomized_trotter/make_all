@@ -1,0 +1,4 @@
+#!/bin/bash
+
+python make_plots
+bash make_figures.sh

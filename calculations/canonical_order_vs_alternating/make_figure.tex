@@ -1,0 +1,27 @@
+
+\foreach \S in {0,1}
+{
+
+\vspace{1cm}
+\textbf{S = \S}\\
+\vspace{1cm}
+
+\begin{tabular}{c}
+
+	\foreach \qpm in {2,3}
+	{
+		\foreach \steps in {1,2,5}{
+			\includegraphics[width=0.25\textwidth]{hom_S_\S_qpm_\qpm_steps_\steps_randomized_0_samples_1.pdf}
+		}
+	}
+\\
+        \foreach \qpm in {2,3}
+        {
+                \foreach \steps in {1,2,5}{
+                        \includegraphics[width=0.25\textwidth]{hom_S_\S_qpm_\qpm_steps_\steps_alternating_1.pdf}
+                }
+        }
+\\
+\end{tabular}
+}
+
