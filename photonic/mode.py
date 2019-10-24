@@ -122,6 +122,37 @@ class PhotonicPaths:
             return False
         return True
 
+    def interpret_bitstring(self, i: BitString) -> str:
+        """
+        Print the bitstring which represents a QubitWaveFunction basis element
+        in the photonic notation
+        e.g. |010001> --> |1>_a|0>_b|2>_c (in this example we have just one mode in each path)
+        :param i: the bitstring
+        :return: photonic notation as string
+        """
+        result = ""
+        for pname, p in self.items():
+            result += "|"
+            for mname, m in p.items():
+                nocc = BitString.from_array(array=[i[k] for k in m.qubits], nbits=self.n_qubits)
+                result += str(nocc.integer)
+            result += ">_" + str(pname)
+        return result
+
+    def extract_occupation_numbers(self, i: BitString) -> Dict[str, Dict[int, BitString]]:
+        """
+        Same as interpret bitstring, but returns a dictionary of dictionaries (indexed by paths and modes) holding occupation numbers
+        e.g. result['a'][-1] gives back the occupation number of mode S=-1 in path a
+        """
+        result = dict()
+        for pname, p in self.items():
+            modes = dict()
+            for mname, m in p.items():
+                nocc = BitString.from_array(array=[i[k] for k in m.qubits], nbits=self.n_qubits)
+                modes[mname] = nocc
+            result[pname] = modes
+        return result
+
 
 class PhotonicStateVector:
     """
@@ -172,7 +203,7 @@ class PhotonicStateVector:
         self._state += QubitWaveFunction.from_int(i=qubit_string, coeff=coeff)
 
     @property
-    def endianness(self):
+    def numbering(self):
         return BitNumbering.MSB
 
     @property
@@ -233,14 +264,7 @@ class PhotonicStateVector:
         return result
 
     def interpret_bitstring(self, i: BitString) -> str:
-        result = ""
-        for pname, p in self._paths.items():
-            result += "|"
-            for mname, m in p.items():
-                nocc = BitString.from_array(array=[i[k] for k in m.qubits], nbits=self.n_qubits)
-                result += str(nocc.integer)
-            result += ">_" + str(pname)
-        return result
+        return self._paths.interpret_bitstring(i=i)
 
     def __eq__(self, other):
         return self._paths == other._paths and self._state == other._state
@@ -256,7 +280,7 @@ class PhotonicStateVector:
     def inner(self, other):
         return self._state.inner(other._state)
 
-    def plot(self, title: str = None, label: str=None, filename: str = None):
+    def plot(self, title: str = None, label: str = None, filename: str = None):
         from matplotlib import pyplot as plt
 
         if title is not None:
@@ -276,10 +300,10 @@ class PhotonicStateVector:
                         orientation='landscape', papertype=None, format=None,
                         transparent=False, bbox_inches='tight', pad_inches=0.1,
                         metadata=None)
-            with open(filename+"_data", 'a+') as f:
+            with open(filename + "_data", 'a+') as f:
                 f.write("names \t\t values\n")
-                for i,v in enumerate(values):
-                    f.write(str(names[i]) + "\t\t"+ str(values[i])+"\n")
+                for i, v in enumerate(values):
+                    f.write(str(names[i]) + "\t\t" + str(values[i]) + "\n")
                 f.write("end\n")
         else:
             plt.show

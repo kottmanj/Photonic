@@ -49,9 +49,9 @@ if __name__ == "__main__":
     expected_wfn = setup.initialize_state(state=str(1.0 / sqrt(2)) + "|2>_a|0>_b+" + str(
         -1.0 / sqrt(2)) + "|0>_a|2>_b")
 
-    print("wfn0 = ", wfn)
-    print("wfn1 = ", expected_wfn)
+    print("result  = ", wfn)
+    print("ideal   = ", expected_wfn)
 
     # Compute and print the fidelity
     fidelity = abs(wfn.inner(expected_wfn)) ** 2
-    print("F    = ", fidelity)
+    print("fidelity= ", fidelity)

@@ -2,13 +2,35 @@ from typing import List, Dict
 from photonic.mode import PhotonicMode, PhotonicPaths, PhotonicStateVector
 from numpy import pi, sqrt
 from openvqe.circuit import gates, QCircuit
-from openvqe import BitNumbering
+from openvqe import BitNumbering, BitString
 from openvqe.hamiltonian import QubitHamiltonian
 from openvqe.hamiltonian.paulis import decompose_transfer_operator
 from openvqe.circuit.exponential_gate import DecompositionFirstOrderTrotter
 from openvqe.simulator.simulator_cirq import SimulatorCirq
+from openvqe.simulator.heralding import HeraldingABC
 from random import shuffle
 
+
+class PhotonicHeralder(HeraldingABC):
+    """
+    Post-Processing assignment for OpenVQE
+    Will only count states with one photon in each path
+    """
+
+    def __init__(self, paths: PhotonicPaths):
+        self.paths = paths
+
+    def is_valid(self, key: BitString) -> bool:
+        # valid if every path has one photon (no matter in which mode)
+        occs = self.paths.extract_occupation_numbers(i=key)
+        for path, mode in occs.items():
+            total = 0
+            for occ in mode.values():
+                total += occ.integer
+            if total != 1:
+                return False
+
+        return True
 
 def QuditS(target: PhotonicMode, t):
     """
@@ -125,7 +147,7 @@ class PhotonicSetup:
         simresult = simulator.simulate_wavefunction(abstract_circuit=self.setup, initial_state=initial_state)
         return PhotonicStateVector(paths=self.paths, state=simresult.wavefunction)
 
-    def run(self, samples: int = 1, initial_state: str = None, simulator=None):
+    def run(self, samples: int = 1, initial_state: str = None, simulator=None, use_heralding:bool=False):
         iprep = QCircuit()
         if initial_state is not None:
             state = self.initialize_state(state=initial_state)
@@ -139,6 +161,11 @@ class PhotonicSetup:
             simulator = SimulatorCirq()
 
         self._add_measurements()
+
+        # add Heralding
+        if use_heralding:
+            simulator._heralding = PhotonicHeralder(paths=self._paths)
+
 
         simresult = simulator.run(abstract_circuit=iprep + self.setup, samples=samples)
         return PhotonicStateVector(paths=self.paths, state=simresult.measurements[''])
@@ -298,7 +325,7 @@ class PhotonicSetup:
         assert (len(self.paths[path_a]) == len(self.paths[path_b]))
         assert (self.paths[path_a].keys() == self.paths[path_b].keys())
 
-        phi = 1.0j * pi * t
+        phi = 1.0j * pi * t * -2.0 # OpenVQE uses the same angle convention for Trotterization as for QubitRotations, therefore the -2 here
 
         # convenience
         a = self.paths[path_a]
@@ -322,3 +349,5 @@ class PhotonicSetup:
 
         # return self for chaining
         return self
+
+
