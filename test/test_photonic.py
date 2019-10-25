@@ -1,9 +1,10 @@
 from openvqe.simulator import QubitWaveFunction
-from photonic import PhotonicMode, PhotonicPaths, PhotonicSetup, PhotonicStateVector
-from numpy import isclose, pi, exp, sqrt
+from photonic import PhotonicPaths, PhotonicSetup, PhotonicStateVector
+from numpy import pi, exp, sqrt
 from openvqe.simulator.simulator_cirq import SimulatorCirq
 from openvqe import BitString
-from openvqe.tools.convenience import number_to_string
+
+import pytest
 
 
 def test_notation(silent=True):
@@ -70,7 +71,7 @@ def test_hologram(silent=True):
     ]
 
     for i, start in enumerate(states):
-        end=setup.simulate_wavefunction(initial_state=start)
+        end = setup.simulate_wavefunction(initial_state=start)
         expected = states[(i + 1) % 5]
         if not silent:
             print("start   =", start)
@@ -108,8 +109,8 @@ def test_mirror(silent=True):
 
     for states in [statesx, statesy]:
         for i, start in enumerate(states):
-            end=setup.simulate_wavefunction(initial_state=start)
-            expected = states[-(i+1)]
+            end = setup.simulate_wavefunction(initial_state=start)
+            expected = states[-(i + 1)]
 
             if not silent:
                 print("Mirror Circuit:\n", SimulatorCirq().create_circuit(abstract_circuit=setup.setup))
@@ -142,7 +143,7 @@ def test_dove_prism(silent=True):
     for occ, start in enumerate(states):
         phase = exp(1j * pi * t * occ)
         end = setup.simulate_wavefunction(initial_state=start)
-        expected = phase*start
+        expected = phase * start
 
         if not silent:
             print("t       =", t)
@@ -266,6 +267,31 @@ def test_332(silent=False):
             assert (end == expected)
 
 
+@pytest.mark.parametrize("S", [1])
+@pytest.mark.parametrize("qpm", [1, 2, 3])
+def test_projector(S, qpm, silent=True):
+
+    angles = None
+    if S==1:
+        angles=[1.2309594173407747, 1.5707963267948966]
+
+    result = None
+    setup = PhotonicSetup(pathnames=['a'], S=S, qpm=qpm)
+    setup.add_one_photon_projector(path='a', angles=angles, daggered=False)
+    wfn = setup.simulate_wavefunction()
+
+    if S == 1:
+        result = PhotonicStateVector.from_string(paths=setup.paths,
+                                                 string="+ 0.5774|001>_a + 0.5774|010>_a + 0.5774|100>_a")
+
+    if not silent:
+        setup.print_circuit()
+        print("wfn     = ", wfn)
+        print("expected= ", result)
+
+    assert (str(result) == str(wfn))
+
+
 if __name__ == "__main__":
     test_notation(silent=False)
 
@@ -278,3 +304,6 @@ if __name__ == "__main__":
     test_mirror(silent=False)
 
     test_hologram(silent=False)
+
+    test_projector(silent=False)
+

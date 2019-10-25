@@ -7,7 +7,8 @@ from openvqe.hamiltonian import QubitHamiltonian
 from openvqe.hamiltonian.paulis import decompose_transfer_operator
 from openvqe.circuit.exponential_gate import DecompositionFirstOrderTrotter
 from openvqe.simulator.simulator_cirq import SimulatorCirq
-from openvqe.simulator.heralding import HeraldingABC
+from openvqe.simulator.heralding import HeraldingABC, HeraldingProjector
+from openvqe import QubitWaveFunction
 from random import shuffle
 
 
@@ -31,6 +32,7 @@ class PhotonicHeralder(HeraldingABC):
                 return False
 
         return True
+
 
 def QuditS(target: PhotonicMode, t):
     """
@@ -147,7 +149,7 @@ class PhotonicSetup:
         simresult = simulator.simulate_wavefunction(abstract_circuit=self.setup, initial_state=initial_state)
         return PhotonicStateVector(paths=self.paths, state=simresult.wavefunction)
 
-    def run(self, samples: int = 1, initial_state: str = None, simulator=None, use_heralding:bool=False):
+    def run(self, samples: int = 1, initial_state: str = None, simulator=None, use_heralding: bool = False):
         iprep = QCircuit()
         if initial_state is not None:
             state = self.initialize_state(state=initial_state)
@@ -165,7 +167,6 @@ class PhotonicSetup:
         # add Heralding
         if use_heralding:
             simulator._heralding = PhotonicHeralder(paths=self._paths)
-
 
         simresult = simulator.run(abstract_circuit=iprep + self.setup, samples=samples)
         return PhotonicStateVector(paths=self.paths, state=simresult.measurements[''])
@@ -278,6 +279,40 @@ class PhotonicSetup:
         self._setup += result
         return self
 
+    def add_one_photon_projector(self, path: str, angles: List[float], daggered=True):
+        """
+        Name might be confusing
+        Addes an element which can disentangle all possible LKs of
+        one-photon states in a specific path
+        The function prepares a circuit which can generate an arbitrary
+        one-photon state in the path form the zero start
+        its inverse is added to the setup
+        :param path: the path where the element acts
+        :param angles: the angles which parametrize this element
+        :return: self for chaining
+        """
+
+        # get the qubits which encode the 0 and 1 occupation numbers (the last of each mode, since we're in MSB numbering)
+        qubits = [mode.qubits[-1] for mode in self.paths[path].values()]
+
+        result = QCircuit()
+        result += gates.Ry(target=qubits[-1], angle=angles[0])
+        result += gates.X(target=qubits[-1])
+        result += gates.X(target=qubits[0], control=qubits[-1])
+        result += gates.X(target=qubits[-1])
+
+        for i, q in enumerate(reversed(qubits)):
+            if q == qubits[-1]: continue
+            if q == qubits[0]: break
+            result += gates.Ry(target=q, control=qubits[0], angle=angles[i])
+            result += gates.X(target=qubits[0], control=q)
+
+        if daggered:
+            self._setup += result.dagger()
+        else:
+            self._setup += result
+        return self
+
     def prepare_SPDC_state(self, path_a: str, path_b: str):
         triple_angle = 0.9553166181245093
         qubits = []
@@ -325,7 +360,7 @@ class PhotonicSetup:
         assert (len(self.paths[path_a]) == len(self.paths[path_b]))
         assert (self.paths[path_a].keys() == self.paths[path_b].keys())
 
-        phi = 1.0j * pi * t * -2.0 # OpenVQE uses the same angle convention for Trotterization as for QubitRotations, therefore the -2 here
+        phi = 1.0j * pi * t * -2.0  # OpenVQE uses the same angle convention for Trotterization as for QubitRotations, therefore the -2 here
 
         # convenience
         a = self.paths[path_a]
@@ -349,5 +384,3 @@ class PhotonicSetup:
 
         # return self for chaining
         return self
-
-
