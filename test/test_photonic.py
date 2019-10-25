@@ -267,22 +267,17 @@ def test_332(silent=False):
             assert (end == expected)
 
 
-@pytest.mark.parametrize("S", [1])
 @pytest.mark.parametrize("qpm", [1, 2, 3])
-def test_projector(S, qpm, silent=True):
+def test_projector_prep(qpm, silent=True):
+    S = 1
+    angles = [1.2309594173407747, 1.5707963267948966]
 
-    angles = None
-    if S==1:
-        angles=[1.2309594173407747, 1.5707963267948966]
-
-    result = None
     setup = PhotonicSetup(pathnames=['a'], S=S, qpm=qpm)
     setup.add_one_photon_projector(path='a', angles=angles, daggered=False)
     wfn = setup.simulate_wavefunction()
 
-    if S == 1:
-        result = PhotonicStateVector.from_string(paths=setup.paths,
-                                                 string="+ 0.5774|001>_a + 0.5774|010>_a + 0.5774|100>_a")
+    result = PhotonicStateVector.from_string(paths=setup.paths,
+                                             string="+ 0.5774|001>_a + 0.5774|010>_a + 0.5774|100>_a")
 
     if not silent:
         setup.print_circuit()
@@ -290,6 +285,24 @@ def test_projector(S, qpm, silent=True):
         print("expected= ", result)
 
     assert (str(result) == str(wfn))
+
+
+@pytest.mark.parametrize("qpm", [1, 2, 3])
+def test_projector(qpm):
+    S = 1
+    setup = PhotonicSetup(pathnames=['a', 'b'], S=S, qpm=qpm)
+    state = PhotonicStateVector.from_string(paths=setup.paths,
+                                            string="0.5774|001>_a|111>_b+0.5774|010>_a|111>_b+0.5774|100>_a|111>_b")
+    setup.prepare_unary_type_state(state=state)
+    setup.add_one_photon_projector(path='a', angles=[1.2309594173407747, 1.5707963267948966])
+
+    wfn = setup.simulate_wavefunction()
+    assert (str(PhotonicStateVector.from_string(paths=setup.paths, string="1.0|000>_a|111>_b")) == str(wfn))
+
+    counts = setup.run(samples=100)
+    print("counts=", str(counts))
+    reduced_paths = PhotonicPaths(path_names=['b'], S=S, qpm=qpm)
+    assert (str(PhotonicStateVector.from_string(paths=reduced_paths, string="100|111>_b")) == str(counts))
 
 
 if __name__ == "__main__":
@@ -306,4 +319,3 @@ if __name__ == "__main__":
     test_hologram(silent=False)
 
     test_projector(silent=False)
-

@@ -8,8 +8,7 @@ from openvqe.hamiltonian.paulis import decompose_transfer_operator
 from openvqe.circuit.exponential_gate import DecompositionFirstOrderTrotter
 from openvqe.simulator.simulator_cirq import SimulatorCirq
 from openvqe.simulator.heralding import HeraldingABC, HeraldingProjector
-from openvqe import QubitWaveFunction
-from random import shuffle
+from openvqe.apps import UnaryStatePrep
 
 
 class PhotonicHeralder(HeraldingABC):
@@ -32,6 +31,28 @@ class PhotonicHeralder(HeraldingABC):
                 return False
 
         return True
+
+class PhotonicHeraldingProjector(HeraldingProjector):
+
+    def __init__(self, paths: PhotonicPaths, active_path:str, delete_active_path: bool=True):
+        self.paths = paths
+        subregister = []
+        for mode in paths[active_path].values():
+            subregister += mode.qubits
+        projector_space = [BitString.from_int(integer=0, nbits=len(subregister)).binary]
+        super().__init__(register=paths.qubits, subregister=subregister, projector_space=projector_space, delete_subregister=delete_active_path)
+
+        if delete_active_path:
+            # make the reduced path
+            pathnames = []
+            for name in paths.keys():
+                if name!=active_path:
+                    pathnames.append(name)
+
+            self.reduced_paths = PhotonicPaths(path_names=pathnames, S=paths.S, qpm=paths.qpm)
+        else:
+            self.reduced_paths = paths
+
 
 
 def QuditS(target: PhotonicMode, t):
@@ -125,6 +146,8 @@ class PhotonicSetup:
         else:
             self._setup = setup
 
+        self.heralding = None
+
     def __repr__(self):
         result = "PhotonicSetup:\n"
         result += str(self.paths)
@@ -149,7 +172,7 @@ class PhotonicSetup:
         simresult = simulator.simulate_wavefunction(abstract_circuit=self.setup, initial_state=initial_state)
         return PhotonicStateVector(paths=self.paths, state=simresult.wavefunction)
 
-    def run(self, samples: int = 1, initial_state: str = None, simulator=None, use_heralding: bool = False):
+    def run(self, samples: int = 1, initial_state: str = None, simulator=None):
         iprep = QCircuit()
         if initial_state is not None:
             state = self.initialize_state(state=initial_state)
@@ -164,12 +187,13 @@ class PhotonicSetup:
 
         self._add_measurements()
 
-        # add Heralding
-        if use_heralding:
-            simulator._heralding = PhotonicHeralder(paths=self._paths)
-
-        simresult = simulator.run(abstract_circuit=iprep + self.setup, samples=samples)
-        return PhotonicStateVector(paths=self.paths, state=simresult.measurements[''])
+        if self.heralding is not None:
+            simulator._heralding = self.heralding
+            simresult = simulator.run(abstract_circuit=iprep + self.setup, samples=samples)
+            return PhotonicStateVector(paths=self.heralding.reduced_paths, state=simresult.measurements[''])
+        else:
+            simresult = simulator.run(abstract_circuit=iprep + self.setup, samples=samples)
+            return PhotonicStateVector(paths=self.paths, state=simresult.measurements[''])
 
     @classmethod
     def from_paths(cls, paths: PhotonicPaths, setup: QCircuit = None):
@@ -287,6 +311,7 @@ class PhotonicSetup:
         The function prepares a circuit which can generate an arbitrary
         one-photon state in the path form the zero start
         its inverse is added to the setup
+        this should be the last element acting on this path! (will not be checked)
         :param path: the path where the element acts
         :param angles: the angles which parametrize this element
         :return: self for chaining
@@ -311,6 +336,10 @@ class PhotonicSetup:
             self._setup += result.dagger()
         else:
             self._setup += result
+
+        # add heralder
+        self.heralding = PhotonicHeraldingProjector(paths=self.paths, active_path=path)
+
         return self
 
     def prepare_SPDC_state(self, path_a: str, path_b: str):
@@ -384,3 +413,16 @@ class PhotonicSetup:
 
         # return self for chaining
         return self
+
+    def prepare_unary_type_state(self, state:PhotonicStateVector):
+        """
+        This will do some calculations, so only use it to debug
+        :return: adds the preparation of the state to the setup, returns self for chaining
+        """
+        if isinstance(state, str):
+            state = PhotonicStateVector.from_string(paths=self.paths, string=state)
+        USP = UnaryStatePrep(target_space=state.state)
+        self._setup +=USP(wfn=state.state)
+        return self
+
+

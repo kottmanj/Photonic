@@ -306,7 +306,7 @@ class PhotonicStateVector:
                     f.write(str(names[i]) + "\t\t" + str(values[i]) + "\n")
                 f.write("end\n")
         else:
-            plt.show
+            plt.show()
 
 
 if __name__ == "__main__":
