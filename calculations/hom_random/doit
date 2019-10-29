@@ -1,8 +1,0 @@
-#!/bin/bash
-
-python write_inputs.py
-
-for filename in input_* ; do
-	echo "filename " $filename
-	python hom_randomized_trotter.py filename=${filename} 
-done

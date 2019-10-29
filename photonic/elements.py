@@ -32,27 +32,28 @@ class PhotonicHeralder(HeraldingABC):
 
         return True
 
+
 class PhotonicHeraldingProjector(HeraldingProjector):
 
-    def __init__(self, paths: PhotonicPaths, active_path:str, delete_active_path: bool=True):
+    def __init__(self, paths: PhotonicPaths, active_path: str, delete_active_path: bool = True):
         self.paths = paths
         subregister = []
         for mode in paths[active_path].values():
             subregister += mode.qubits
         projector_space = [BitString.from_int(integer=0, nbits=len(subregister)).binary]
-        super().__init__(register=paths.qubits, subregister=subregister, projector_space=projector_space, delete_subregister=delete_active_path)
+        super().__init__(register=paths.qubits, subregister=subregister, projector_space=projector_space,
+                         delete_subregister=delete_active_path)
 
         if delete_active_path:
             # make the reduced path
             pathnames = []
             for name in paths.keys():
-                if name!=active_path:
+                if name != active_path:
                     pathnames.append(name)
 
             self.reduced_paths = PhotonicPaths(path_names=pathnames, S=paths.S, qpm=paths.qpm)
         else:
             self.reduced_paths = paths
-
 
 
 def QuditS(target: PhotonicMode, t):
@@ -207,7 +208,7 @@ class PhotonicSetup:
         self._setup += other.setup
         return self
 
-    def prepare_332_state(self, path_a: str, path_b: str, path_c: str):
+    def prepare_332_state(self, path_a: str, path_b: str, path_c: str, daggered=False):
         """
         :return: A circuit which prepares the photonic 332 state in qubit representation
         """
@@ -257,7 +258,10 @@ class PhotonicSetup:
         circuit *= gates.X(target=qubits[2], control=qubits[3])
         circuit *= gates.X(target=qubits[0], control=qubits[2])
 
-        self._setup += circuit
+        if daggered:
+            self._setup += circuit.dagger()
+        else:
+            self._setup += circuit
         return self
 
     def add_mirror(self, path: str):
@@ -281,13 +285,13 @@ class PhotonicSetup:
         self._setup += result
         return self
 
-    def add_doveprism(self, path: str, mode: int, t):
+    def add_doveprism(self, path: str, t):
         """
-        :param target: The PhotonicMode onto which the Prism acts
         :param t: The phase is parametrized by t: phase=exp(i*pi*t)
-        :return: DivePrism circuit
+        :return: DovePrism circuit
         """
-        self._setup += QuditS(target=self.paths[path][mode], t=t)
+        for k,v in self.paths[path].items():
+            self._setup += QuditS(target=v, t=t*k)
         return self
 
     def add_hologram(self, path: str):
@@ -303,7 +307,7 @@ class PhotonicSetup:
         self._setup += result
         return self
 
-    def add_one_photon_projector(self, path: str, angles: List[float], daggered=True):
+    def add_parametrized_one_photon_projector(self, path: str, angles: List[float], daggered=True):
         """
         Name might be confusing
         Addes an element which can disentangle all possible LKs of
@@ -311,6 +315,7 @@ class PhotonicSetup:
         The function prepares a circuit which can generate an arbitrary
         one-photon state in the path form the zero start
         its inverse is added to the setup
+        heralding is also added
         this should be the last element acting on this path! (will not be checked)
         :param path: the path where the element acts
         :param angles: the angles which parametrize this element
@@ -338,6 +343,35 @@ class PhotonicSetup:
             self._setup += result
 
         # add heralder
+        self.heralding = PhotonicHeraldingProjector(paths=self.paths, active_path=path)
+
+        return self
+
+    def add_one_photon_projector(self, path: str, daggered=True):
+        """
+        same as parametrized_one_photon_projector but hard-wired to the state: |0> + |1>
+        meaning one photon in mode 0 and one photon in mode 1
+        for S=1 this looks like: |010>_path + |001>_path
+        for S=2 |00100>_path + |00010>_path
+        :param path: the path where the projector adds
+        :param daggered: other way, for testing
+        :return: adds the element to the setup and returns self for chaining
+        """
+        assert self.S > 0
+
+        # identify the significant qubits encoding occs 0 and 1 in modes 0 and 1
+        qubits = [mode.qubits[-1] for mode in [self.paths[path][0], self.paths[path][1]]]
+
+        result = gates.H(target=qubits[1])
+        result += gates.X(target=qubits[1])
+        result += gates.X(target=qubits[0], control=qubits[1])
+        result += gates.X(target=qubits[1])
+
+        if daggered:
+            self._setup += result.dagger()
+        else:
+            self._setup += result
+
         self.heralding = PhotonicHeraldingProjector(paths=self.paths, active_path=path)
 
         return self
@@ -375,7 +409,7 @@ class PhotonicSetup:
         return self
 
     def add_beamsplitter(self, path_a: str, path_b: str, t=0.5, steps: int = 1, join_components: bool = True,
-                         randomize_component_order: bool = True, randomize: bool = True):
+                         randomize_component_order: bool = False, randomize: bool = False):
         """
         :param path_a: name of path a
         :param path_b: name of path b
@@ -414,7 +448,7 @@ class PhotonicSetup:
         # return self for chaining
         return self
 
-    def prepare_unary_type_state(self, state:PhotonicStateVector):
+    def prepare_unary_type_state(self, state: PhotonicStateVector):
         """
         This will do some calculations, so only use it to debug
         :return: adds the preparation of the state to the setup, returns self for chaining
@@ -422,7 +456,5 @@ class PhotonicSetup:
         if isinstance(state, str):
             state = PhotonicStateVector.from_string(paths=self.paths, string=state)
         USP = UnaryStatePrep(target_space=state.state)
-        self._setup +=USP(wfn=state.state)
+        self._setup += USP(wfn=state.state)
         return self
-
-

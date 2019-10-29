@@ -119,39 +119,34 @@ def test_mirror(silent=True):
                 print("expected=", expected)
             assert (end == expected)
 
-
-def test_dove_prism(silent=True):
+@pytest.mark.parametrize("inout", [
+    ("1.0|100>_a", "-1.0|100>_a"),
+    ("1.0|200>_a","1.0|200>_a"),
+    ("1.0|101>_a","1.0|101>_a"),
+    ("1.0|120>_a", "-1.0|120>_a"),
+    ("1.0|122>_a", "-1.0|122>_a")
+])
+def test_dove_prism(inout, silent=True):
     # stupid qubit intitalization, but it makes the test better
-    S = 0
+    S = 1
     qpm = 2
-    t = 0.5
-    qubits = [0, 1]
-    setup = PhotonicSetup(pathnames=['a'], S=S, qpm=qpm, qubits=qubits)
-    paths = setup.paths
+    t = 1.0
 
-    setup.add_doveprism(path='a', mode=0, t=t)
+    setup = PhotonicSetup(pathnames=['a'], S=S, qpm=qpm)
+    setup.add_doveprism(path='a', t=t)
 
-    states = [
-        PhotonicStateVector.from_string(paths=paths, string="1.0|0>_a"),  # 0 photons in the mode
-        PhotonicStateVector.from_string(paths=paths, string="1.0|1>_a"),  # 1 photons in the mode
-        PhotonicStateVector.from_string(paths=paths, string="1.0|2>_a"),  # 2 photons in the mode
-        PhotonicStateVector.from_string(paths=paths, string="1.0|3>_a")  # 3 photons in the mode
-    ]
+    istate = setup.initialize_state(state=inout[0])
+    ostate = setup.initialize_state(state=inout[1])
 
-    print(SimulatorCirq().create_circuit(abstract_circuit=setup.setup))
+    end = setup.simulate_wavefunction(initial_state=istate)
 
-    for occ, start in enumerate(states):
-        phase = exp(1j * pi * t * occ)
-        end = setup.simulate_wavefunction(initial_state=start)
-        expected = phase * start
-
-        if not silent:
-            print("t       =", t)
-            print("occ     =", occ)
-            print("start   =", start)
-            print("end     =", end)
-            print("expected=", expected)
-        assert (end == expected)
+    if not silent:
+        print(SimulatorCirq().create_circuit(abstract_circuit=setup.setup))
+        print("t       =", t)
+        print("start   =", istate)
+        print("end     =", end)
+        print("expected=", ostate)
+    assert (end == ostate)
 
 
 def test_SPDC(silent=True):
@@ -273,7 +268,7 @@ def test_projector_prep(qpm, silent=True):
     angles = [1.2309594173407747, 1.5707963267948966]
 
     setup = PhotonicSetup(pathnames=['a'], S=S, qpm=qpm)
-    setup.add_one_photon_projector(path='a', angles=angles, daggered=False)
+    setup.add_parametrized_one_photon_projector(path='a', angles=angles, daggered=False)
     wfn = setup.simulate_wavefunction()
 
     result = PhotonicStateVector.from_string(paths=setup.paths,
@@ -288,22 +283,36 @@ def test_projector_prep(qpm, silent=True):
 
 
 @pytest.mark.parametrize("qpm", [1, 2, 3])
-def test_projector(qpm):
+def test_parametrized_projector(qpm):
     S = 1
     setup = PhotonicSetup(pathnames=['a', 'b'], S=S, qpm=qpm)
     state = PhotonicStateVector.from_string(paths=setup.paths,
                                             string="0.5774|001>_a|111>_b+0.5774|010>_a|111>_b+0.5774|100>_a|111>_b")
     setup.prepare_unary_type_state(state=state)
-    setup.add_one_photon_projector(path='a', angles=[1.2309594173407747, 1.5707963267948966])
+    setup.add_parametrized_one_photon_projector(path='a', angles=[1.2309594173407747, 1.5707963267948966])
 
     wfn = setup.simulate_wavefunction()
     assert (str(PhotonicStateVector.from_string(paths=setup.paths, string="1.0|000>_a|111>_b")) == str(wfn))
 
     counts = setup.run(samples=100)
-    print("counts=", str(counts))
     reduced_paths = PhotonicPaths(path_names=['b'], S=S, qpm=qpm)
     assert (str(PhotonicStateVector.from_string(paths=reduced_paths, string="100|111>_b")) == str(counts))
 
+@pytest.mark.parametrize("qpm", [1, 2, 3])
+def test_projector(qpm):
+    S = 1
+    setup = PhotonicSetup(pathnames=['a', 'b'], S=S, qpm=qpm)
+    state = PhotonicStateVector.from_string(paths=setup.paths,
+                                            string="0.7071|001>_a|111>_b+0.7071|010>_a|111>_b")
+    setup.prepare_unary_type_state(state=state)
+    setup.add_one_photon_projector(path='a')
+
+    wfn = setup.simulate_wavefunction()
+    assert (str(PhotonicStateVector.from_string(paths=setup.paths, string="1.0|000>_a|111>_b")) == str(wfn))
+
+    counts = setup.run(samples=100)
+    reduced_paths = PhotonicPaths(path_names=['b'], S=S, qpm=qpm)
+    assert (str(PhotonicStateVector.from_string(paths=reduced_paths, string="100|111>_b")) == str(counts))
 
 if __name__ == "__main__":
     test_notation(silent=False)
@@ -318,4 +327,4 @@ if __name__ == "__main__":
 
     test_hologram(silent=False)
 
-    test_projector(silent=False)
+    test_parametrized_projector(silent=False)

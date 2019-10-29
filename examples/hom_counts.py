@@ -31,7 +31,7 @@ if __name__ == "__main__":
     S = 0                           # Modes will run from -S ... 0 ... +S
     qpm = 2                         # Qubits per mode
     initial_state="|1>_a|1>_b"      # Notation has to be consistent with your S
-    trotter_steps = 1               # number of trotter steps for the BeamSplitter
+    trotter_steps = 2               # number of trotter steps for the BeamSplitter
     samples = 100                   # number of samples to simulate
     simulator = SimulatorQiskit()   # Pick the Simulator
     # Alternatives
