@@ -110,4 +110,5 @@ if __name__ == "__main__":
         values.append(value)
 
     output="hom_ts_"+str(param.trotter_steps)+"_rand_"+str(param.randomize)
-    landscape_plotter(landscape=landscape, values=values, filename=output)
+    label="trotter steps: " + str(param.trotter_steps) + "\n" + "randomized: " + str(bool(param.randomize))
+    landscape_plotter(landscape=landscape, values=values, filename=output, label=label)
