@@ -25,6 +25,15 @@ See OpenVQE/examples/randomized_trotter... for more or less the same example
 for a single mode and a bit easier
 """
 
+def read_dictionary(filename:str, d:dict=None):
+    if d is None:
+        d = {}
+    with open(filename, 'r') as f:
+        for line in f:
+            (key, val) = line.split()
+            d[str(key)] = int(val)
+    return d
+
 
 class DoIt:
     def __init__(self, S: int, qpm: int, trotter_steps: int, randomize: bool, samples: int, initial_state: str,

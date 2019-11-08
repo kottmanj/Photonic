@@ -67,7 +67,7 @@ def QuditS(target: PhotonicMode, t):
         iterator = reversed(target.qubits)
     result = QCircuit()
     for i, q in enumerate(iterator):
-        result *= gates.Z(target=q, power=t * 2 ** i)
+        result += gates.Rz(target=q, angle=t * 2 ** i * pi)  # adds a global phase
     return result
 
 
@@ -77,7 +77,7 @@ def QuditSWAP(mode1: PhotonicMode, mode2: PhotonicMode) -> QCircuit:
 
     result = QCircuit()
     for i, q in enumerate(mode1.qubits):
-        result *= gates.SWAP(target=[mode1.qubits[i], mode2.qubits[i]])
+        result += gates.SWAP(mode1.qubits[i], mode2.qubits[i])
 
     return result
 
@@ -149,6 +149,9 @@ class PhotonicSetup:
 
         self.heralding = None
 
+    def extract_parameters(self):
+        return self._setup.extract_parameters()
+
     def __repr__(self):
         result = "PhotonicSetup:\n"
         result += str(self.paths)
@@ -171,6 +174,7 @@ class PhotonicSetup:
             initial_state = initial_state.state
 
         simresult = simulator.simulate_wavefunction(abstract_circuit=self.setup, initial_state=initial_state)
+        print("wfn=", simresult.wavefunction)
         return PhotonicStateVector(paths=self.paths, state=simresult.wavefunction)
 
     def run(self, samples: int = 1, initial_state: str = None, simulator=None):
@@ -190,10 +194,16 @@ class PhotonicSetup:
 
         if self.heralding is not None:
             simulator._heralding = self.heralding
-            simresult = simulator.run(abstract_circuit=iprep + self.setup, samples=samples)
+            if samples is None:
+                simresult = simulator.simulate_wavefunction(abstract_circuit=iprep + self.setup)
+            else:
+                simresult = simulator.run(abstract_circuit=iprep + self.setup, samples=samples)
             return PhotonicStateVector(paths=self.heralding.reduced_paths, state=simresult.measurements[''])
         else:
-            simresult = simulator.run(abstract_circuit=iprep + self.setup, samples=samples)
+            if samples is None:
+                simresult = simulator.simulate_wavefunction(abstract_circuit=iprep + self.setup)
+            else:
+                simresult = simulator.run(abstract_circuit=iprep + self.setup, samples=samples)
             return PhotonicStateVector(paths=self.paths, state=simresult.measurements[''])
 
     @classmethod
@@ -290,8 +300,8 @@ class PhotonicSetup:
         :param t: The phase is parametrized by t: phase=exp(i*pi*t)
         :return: DovePrism circuit
         """
-        for k,v in self.paths[path].items():
-            self._setup += QuditS(target=v, t=t*k)
+        for k, v in self.paths[path].items():
+            self._setup += QuditS(target=v, t=t * k)
         return self
 
     def add_hologram(self, path: str):
@@ -347,7 +357,7 @@ class PhotonicSetup:
 
         return self
 
-    def add_one_photon_projector(self, path: str, daggered=True):
+    def add_one_photon_projector(self, path: str, daggered: bool = True, delete_active_path: bool = True):
         """
         same as parametrized_one_photon_projector but hard-wired to the state: |0> + |1>
         meaning one photon in mode 0 and one photon in mode 1
@@ -372,7 +382,8 @@ class PhotonicSetup:
         else:
             self._setup += result
 
-        self.heralding = PhotonicHeraldingProjector(paths=self.paths, active_path=path)
+        self.heralding = PhotonicHeraldingProjector(paths=self.paths, active_path=path,
+                                                    delete_active_path=delete_active_path)
 
         return self
 
@@ -408,7 +419,7 @@ class PhotonicSetup:
         self._setup += result
         return self
 
-    def add_beamsplitter(self, path_a: str, path_b: str, t=0.5, steps: int = 1, join_components: bool = True,
+    def add_beamsplitter(self, path_a: str, path_b: str, t=0.25, steps: int = 1, join_components: bool = True,
                          randomize_component_order: bool = False, randomize: bool = False):
         """
         :param path_a: name of path a
@@ -423,7 +434,7 @@ class PhotonicSetup:
         assert (len(self.paths[path_a]) == len(self.paths[path_b]))
         assert (self.paths[path_a].keys() == self.paths[path_b].keys())
 
-        phi = 1.0j * pi * t * -2.0  # OpenVQE uses the same angle convention for Trotterization as for QubitRotations, therefore the -2 here
+        phi = 1.0j * pi * -2.0  # OpenVQE uses the same angle convention for Trotterization as for QubitRotations, therefore the -2 here
 
         # convenience
         a = self.paths[path_a]
@@ -431,7 +442,7 @@ class PhotonicSetup:
 
         modes = [k for k in a.keys()]
 
-        trotter = DecompositionFirstOrderTrotter(steps=steps, t=1.0, join_components=join_components,
+        trotter = DecompositionFirstOrderTrotter(steps=steps, join_components=join_components,
                                                  randomize_component_order=randomize_component_order,
                                                  randomize=randomize)
 
@@ -442,19 +453,33 @@ class PhotonicSetup:
             hamiltonian -= creation(qubits=b[mode].qubits) * anihilation(qubits=a[mode].qubits)
             generators.append(phi * hamiltonian)
 
-        result = trotter(generators=generators)
+        result = trotter(generators=generators, coeffs=[t] * len(generators))
         self._setup += result
 
         # return self for chaining
         return self
 
-    def prepare_unary_type_state(self, state: PhotonicStateVector):
+    def prepare_unary_type_state(self, state: PhotonicStateVector, daggered:bool=False):
         """
         This will do some calculations, so only use it to debug
         :return: adds the preparation of the state to the setup, returns self for chaining
         """
         if isinstance(state, str):
             state = PhotonicStateVector.from_string(paths=self.paths, string=state)
+            print("state=", state.state)
         USP = UnaryStatePrep(target_space=state.state)
-        self._setup += USP(wfn=state.state)
+        U = USP(wfn=state.state)
+        if daggered:
+            self._setup += U.dagger()
+        else:
+            self._setup += U
+        return self
+
+    def add_circuit(self, U):
+        """
+        Use with care, no checks are performed
+        :param U: add this unitary to the setup
+        :return: self for chaining
+        """
+        self._setup += U
         return self

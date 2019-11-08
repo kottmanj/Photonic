@@ -1,0 +1,5 @@
+trotter_steps : 8
+randomize : 1
+samples: 1
+runs: 160
+steps: 25

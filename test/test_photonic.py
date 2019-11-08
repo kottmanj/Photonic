@@ -126,7 +126,9 @@ def test_mirror(silent=True):
     ("1.0|120>_a", "-1.0|120>_a"),
     ("1.0|122>_a", "-1.0|122>_a")
 ])
-def test_dove_prism(inout, silent=True):
+def test_dove_prism(inout, silent=False):
+    # dove prism is implemented with a global phase
+    # but for this tests this is one
     # stupid qubit intitalization, but it makes the test better
     S = 1
     qpm = 2

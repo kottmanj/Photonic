@@ -45,7 +45,7 @@ if __name__ == "__main__":
     # i.e. |100>_a|100>b means: 1 photon in mode -1 in path a, and the same for path b
     # note that the initial state has to be denoted consistently with S
     # so if S=2 the same state would be |01000>_a|01000>
-    #simulator = SimulatorQiskit()   # Pick the Simulator
+    simulator = SimulatorQiskit()   # Pick the Simulator
     # Alternatives
     # SimulatorCirq: Googles simulator
     # SimulatorQiskit: IBM simulator
@@ -60,5 +60,5 @@ if __name__ == "__main__":
     setup.add_beamsplitter(path_a='a', path_b='b', t=0.25, steps=trotter_steps)
     setup.add_doveprism(path='a', t=1.0)
     setup.add_beamsplitter(path_a='a', path_b='b', t=0.25, steps=trotter_steps)
-    counts=setup.run(initial_state=istate, samples=samples)
+    counts=setup.run(initial_state=istate, samples=samples, simulator=simulator)
     counts.plot(title="Parity Sort: Initial state was " + istate)
