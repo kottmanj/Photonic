@@ -9,9 +9,10 @@ You need to change the paths of course
 #sys.path.append("/home/jsk/projects/photonic-qc/code/")
 
 from photonic import PhotonicSetup, PhotonicStateVector
-from openvqe.simulator.simulator_cirq import SimulatorCirq
-from openvqe.simulator.simulator_qiskit import SimulatorQiskit
+from openvqe.simulators.simulator_cirq import SimulatorCirq
+from openvqe.simulators.simulator_qiskit import SimulatorQiskit
 from numpy import pi, sqrt
+from openvqe.circuit.qpic import export_to_pdf
 
 """
 Here we creating Hong-Ou-Mandel States with a single beam splitter
@@ -46,8 +47,12 @@ if __name__ == "__main__":
     # the beam splitter is parametrized as phi=i*pi*t
     setup.add_beamsplitter(path_a='a', path_b='b', t=0.25, steps=trotter_steps)
 
+
+    export_to_pdf(circuit=setup.setup, filename="hom_setup")
     # need explicit circuit for initial state
     counts = setup.run(samples=100, initial_state=initial_state, simulator=simulator)
     print("counts=", counts)
     counts.plot(title="HOM-Counts for initial state "+ initial_state)
+
+
 

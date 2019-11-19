@@ -1,14 +1,23 @@
-from typing import List, Dict
+import typing
 from photonic.mode import PhotonicMode, PhotonicPaths, PhotonicStateVector
 from numpy import pi, sqrt
-from openvqe.circuit import gates, QCircuit
-from openvqe import BitNumbering, BitString
+from openvqe import gates, simulators, BitNumbering, BitString
 from openvqe.hamiltonian import QubitHamiltonian
 from openvqe.hamiltonian.paulis import decompose_transfer_operator
-from openvqe.circuit.exponential_gate import DecompositionFirstOrderTrotter
-from openvqe.simulator.simulator_cirq import SimulatorCirq
-from openvqe.simulator.heralding import HeraldingABC, HeraldingProjector
+from openvqe.simulators.heralding import HeraldingABC, HeraldingProjector
 from openvqe.apps import UnaryStatePrep
+
+from dataclasses import dataclass
+
+@dataclass
+class AbstractElement:
+    """
+    DataClass which keeps track of the photonic setup
+    --> More elegant solutions possible
+    Currently only implemented for qpic output
+    """
+    name : str
+    paths: typing.List[str]
 
 
 class PhotonicHeralder(HeraldingABC):
@@ -55,7 +64,7 @@ class PhotonicHeraldingProjector(HeraldingProjector):
         else:
             self.reduced_paths = paths
 
-
+from openvqe.circuit import Variable
 def QuditS(target: PhotonicMode, t):
     """
     :param target:
@@ -65,24 +74,24 @@ def QuditS(target: PhotonicMode, t):
     iterator = target.qubits
     if target.numbering == BitNumbering.MSB:
         iterator = reversed(target.qubits)
-    result = QCircuit()
+    result = gates.QCircuit()
     for i, q in enumerate(iterator):
-        result += gates.Rz(target=q, angle=t * 2 ** i * pi)  # adds a global phase
+        result += gates.Rz(target=q, angle=t*2**i*pi )#Variable(name="i="+str(i), value=t.value*2**i*pi) ) # adds a global phase
     return result
 
 
-def QuditSWAP(mode1: PhotonicMode, mode2: PhotonicMode) -> QCircuit:
+def QuditSWAP(mode1: PhotonicMode, mode2: PhotonicMode) -> gates.QCircuit:
     assert (mode1.n_qubits == mode2.n_qubits)
     assert (mode1.numbering == mode2.numbering)
 
-    result = QCircuit()
+    result = gates.QCircuit()
     for i, q in enumerate(mode1.qubits):
         result += gates.SWAP(mode1.qubits[i], mode2.qubits[i])
 
     return result
 
 
-def anihilation(qubits: List[int] = None) -> QubitHamiltonian:
+def anihilation(qubits: typing.List[int] = None) -> QubitHamiltonian:
     max_occ = 2 ** len(qubits) - 1
     result = QubitHamiltonian.init_zero()
     for occ in range(max_occ):
@@ -91,7 +100,7 @@ def anihilation(qubits: List[int] = None) -> QubitHamiltonian:
     return result
 
 
-def creation(qubits: List[int] = None) -> QubitHamiltonian:
+def creation(qubits: typing.List[int] = None) -> QubitHamiltonian:
     max_occ = 2 ** len(qubits) - 1
     result = QubitHamiltonian.init_zero()
     for occ in range(max_occ):
@@ -128,13 +137,13 @@ class PhotonicSetup:
 
     def print_circuit(self, simulator=None):
         if simulator is None:
-            simulator = SimulatorCirq()
+            simulator = simulators.SimulatorCirq()
         print(simulator.create_circuit(abstract_circuit=self.setup))
 
     def initialize_state(self, state: str) -> PhotonicStateVector:
         return PhotonicStateVector.from_string(paths=self.paths, string=state)
 
-    def __init__(self, pathnames: List[str], S: int, qpm: int, qubits: List[int] = None, setup: QCircuit = None):
+    def __init__(self, pathnames: typing.List[str], S: int, qpm: int, qubits: typing.List[int] = None, setup: gates.QCircuit = None):
         """
         :param pathnames: The names of the paths in the setups
         :param S: The Spin number which defines the number of simulated modes which ranges from -S to S
@@ -143,9 +152,11 @@ class PhotonicSetup:
 
         self._paths = PhotonicPaths(path_names=pathnames, S=S, qpm=qpm, qubits=qubits)
         if setup is None:
-            self._setup = QCircuit()
+            self._setup = gates.QCircuit()
         else:
             self._setup = setup
+
+        self._abstract_setup = []
 
         self.heralding = None
 
@@ -167,7 +178,7 @@ class PhotonicSetup:
             initial_state = PhotonicStateVector.from_string(paths=self.paths, string=initial_state)
 
         if simulator is None:
-            simulator = SimulatorCirq()
+            simulator = simulators.SimulatorCirq()
         if initial_state is None:
             initial_state = 0
         else:
@@ -178,7 +189,7 @@ class PhotonicSetup:
         return PhotonicStateVector(paths=self.paths, state=simresult.wavefunction)
 
     def run(self, samples: int = 1, initial_state: str = None, simulator=None):
-        iprep = QCircuit()
+        iprep = gates.QCircuit()
         if initial_state is not None:
             state = self.initialize_state(state=initial_state)
             # can only do product states right now, alltough more general ones are possible
@@ -188,7 +199,7 @@ class PhotonicSetup:
                 if q == 1:
                     iprep += gates.X(target=i)
         if simulator is None:
-            simulator = SimulatorCirq()
+            simulator = simulators.SimulatorCirq()
 
         self._add_measurements()
 
@@ -207,7 +218,7 @@ class PhotonicSetup:
             return PhotonicStateVector(paths=self.paths, state=simresult.measurements[''])
 
     @classmethod
-    def from_paths(cls, paths: PhotonicPaths, setup: QCircuit = None):
+    def from_paths(cls, paths: PhotonicPaths, setup: gates.QCircuit = None):
         return cls(pathnames=[k for k in paths.keys()], S=paths.S, qpm=paths.qpm, setup=setup)
 
     def __add__(self, other):
@@ -227,8 +238,6 @@ class PhotonicSetup:
         pb = self.paths[path_b]
         pc = self.paths[path_c]
 
-        triple_angle = 0.9553166181245093
-
         qubits = []  # qubits onto which the circuit will act
         max_qubit = 0  # maxmimal number of qubits in the whole path setup, the circuit should know that in order for the simulator to give back the states in correct formats
         for path in [pa, pb, pc]:
@@ -241,42 +250,39 @@ class PhotonicSetup:
                 max_qubit = max(max_qubit, max(mode.qubits))
         assert (len(qubits) == 9)
 
-        pa = pi / 2
-        path_b = triple_angle * 2
-        circuit = QCircuit()
+        circuit = gates.QCircuit()
         circuit.n_qubits = max_qubit + 1
 
-        circuit *= gates.X(target=qubits[7])
-        circuit *= gates.X(target=qubits[4])
-        circuit *= gates.X(target=qubits[1])
-        circuit *= gates.X(target=qubits[0])
-        circuit *= gates.Ry(target=qubits[8], control=qubits[0], angle=path_b)
-        circuit *= gates.X(target=qubits[0])
-        circuit *= gates.X(target=qubits[7], control=qubits[8])
-        circuit *= gates.X(target=qubits[7])
-        circuit *= gates.X(target=qubits[4], control=qubits[7])
-        circuit *= gates.X(target=qubits[7])
-        circuit *= gates.X(target=qubits[4])
-        circuit *= gates.X(target=qubits[3], control=qubits[4])
-        circuit *= gates.X(target=qubits[4])
-        circuit *= gates.X(target=qubits[1], control=qubits[3])
-        circuit *= gates.X(target=qubits[1])
-        circuit *= gates.X(target=qubits[0], control=qubits[1])
-        circuit *= gates.X(target=qubits[1])
-        circuit *= gates.Ry(target=qubits[5], control=qubits[0], angle=pa)
-        circuit *= gates.X(target=qubits[3], control=qubits[5])
-        circuit *= gates.X(target=qubits[2], control=qubits[3])
-        circuit *= gates.X(target=qubits[0], control=qubits[2])
+        circuit += gates.X(target=qubits[4])
+        circuit += gates.X(target=qubits[1])
+        circuit += gates.Ry(target=qubits[7], angle=1.2309594173407747)
+        circuit += gates.X(target=qubits[7])
+        circuit += gates.X(target=qubits[6], control=qubits[7])
+        circuit += gates.X(target=qubits[7])
+        circuit += gates.X(target=qubits[4], control=qubits[6])
+        circuit += gates.X(target=qubits[4])
+        circuit += gates.X(target=qubits[3], control=qubits[4])
+        circuit += gates.X(target=qubits[4])
+        circuit += gates.X(target=qubits[1], control=qubits[3])
+        circuit += gates.X(target=qubits[1])
+        circuit += gates.X(target=qubits[0], control=qubits[1])
+        circuit += gates.X(target=qubits[1])
+        circuit += gates.Ry(target=qubits[8], control=qubits[0], angle=1.5707963267948966)
+        circuit += gates.X(target=qubits[6], control=qubits[8])
+        circuit += gates.X(target=qubits[5], control=qubits[6])
+        circuit += gates.X(target=qubits[3], control=qubits[5])
 
         if daggered:
             self._setup += circuit.dagger()
+            self._abstract_setup += [AbstractElement(name="SPDC^\\dagger", paths=[path_a, path_b, path_c])]
         else:
             self._setup += circuit
+            self._abstract_setup += [AbstractElement(name="SPDC", paths=[path_a, path_b, path_c])]
         return self
 
     def add_mirror(self, path: str):
         p = self.paths[path]
-        result = QCircuit()
+        result = gates.QCircuit()
         passed_keys = [0]
         for k, v in p.items():
             si1 = int(k)
@@ -293,6 +299,7 @@ class PhotonicSetup:
                 raise Exception("No Partner for Mode %" % si1)
 
         self._setup += result
+        self._abstract_setup += [AbstractElement(name="M", paths=[path])]
         return self
 
     def add_doveprism(self, path: str, t):
@@ -302,22 +309,25 @@ class PhotonicSetup:
         """
         for k, v in self.paths[path].items():
             self._setup += QuditS(target=v, t=t * k)
+
+        self._abstract_setup += [AbstractElement(name="DP(\\phi)", paths=[path])]
         return self
 
     def add_hologram(self, path: str):
         p = self.paths[path]
         sorted_keys = [k for k in p.keys()]
         sorted_keys.sort(reverse=True)
-        result = QCircuit()
+        result = gates.QCircuit()
         for k in sorted_keys:
             if k - 1 not in sorted_keys:
                 break
             result *= QuditSWAP(mode1=p[k], mode2=p[k - 1])
 
         self._setup += result
+        self._abstract_setup += [AbstractElement(name="H", paths=[path])]
         return self
 
-    def add_parametrized_one_photon_projector(self, path: str, angles: List[float], daggered=True):
+    def add_parametrized_one_photon_projector(self, path: str, angles: typing.List[float], daggered=True):
         """
         Name might be confusing
         Addes an element which can disentangle all possible LKs of
@@ -335,7 +345,7 @@ class PhotonicSetup:
         # get the qubits which encode the 0 and 1 occupation numbers (the last of each mode, since we're in MSB numbering)
         qubits = [mode.qubits[-1] for mode in self.paths[path].values()]
 
-        result = QCircuit()
+        result = gates.QCircuit()
         result += gates.Ry(target=qubits[-1], angle=angles[0])
         result += gates.X(target=qubits[-1])
         result += gates.X(target=qubits[0], control=qubits[-1])
@@ -349,8 +359,10 @@ class PhotonicSetup:
 
         if daggered:
             self._setup += result.dagger()
+            self._abstract_setup += [AbstractElement(name="R(\\theta)", paths=[path])]
         else:
             self._setup += result
+            self._abstract_setup += [AbstractElement(name="R(\\theta)", paths=[path])]
 
         # add heralder
         self.heralding = PhotonicHeraldingProjector(paths=self.paths, active_path=path)
@@ -359,10 +371,10 @@ class PhotonicSetup:
 
     def add_one_photon_projector(self, path: str, daggered: bool = True, delete_active_path: bool = True):
         """
-        same as parametrized_one_photon_projector but hard-wired to the state: |0> + |1>
+        same as parametrized_one_photon_projector but hard-wired to the state: |0> - |1>
         meaning one photon in mode 0 and one photon in mode 1
-        for S=1 this looks like: |010>_path + |001>_path
-        for S=2 |00100>_path + |00010>_path
+        for S=1 this looks like: |010>_path - |001>_path
+        for S=2 |00100>_path - |00010>_path
         :param path: the path where the projector adds
         :param daggered: other way, for testing
         :return: adds the element to the setup and returns self for chaining
@@ -372,8 +384,8 @@ class PhotonicSetup:
         # identify the significant qubits encoding occs 0 and 1 in modes 0 and 1
         qubits = [mode.qubits[-1] for mode in [self.paths[path][0], self.paths[path][1]]]
 
-        result = gates.H(target=qubits[1])
-        result += gates.X(target=qubits[1])
+        result = gates.X(target=qubits[1])
+        result += gates.H(target=qubits[1])
         result += gates.X(target=qubits[0], control=qubits[1])
         result += gates.X(target=qubits[1])
 
@@ -385,15 +397,16 @@ class PhotonicSetup:
         self.heralding = PhotonicHeraldingProjector(paths=self.paths, active_path=path,
                                                     delete_active_path=delete_active_path)
 
+        self._abstract_setup += [AbstractElement(name="R", paths=[path])]
         return self
 
     def prepare_SPDC_state(self, path_a: str, path_b: str):
         triple_angle = 0.9553166181245093
         qubits = []
         max_qubit = 0
-        path_a = self.paths[path_a]
-        path_b = self.paths[path_b]
-        for path in [path_a, path_b]:
+        a = self.paths[path_a]
+        b = self.paths[path_b]
+        for path in [a, b]:
             for mode in [-1, 0, 1]:
                 if path[mode].numbering == BitNumbering.LSB:
                     qubits.append(path[mode].qubits[0])
@@ -403,20 +416,21 @@ class PhotonicSetup:
                 max_qubit = max(max_qubit, max(mode.qubits))
         assert (len(qubits) == 6)
 
-        result = QCircuit()
+        result = gates.QCircuit()
         result.n_qubits = max_qubit + 1
-        result *= gates.X(target=qubits[0])
-        result *= gates.X(target=qubits[5])
-        result *= gates.Ry(target=qubits[1], angle=2 * triple_angle)
-        result *= gates.X(target=qubits[0], control=qubits[1])
-        result *= gates.X(target=qubits[4], control=qubits[1])
-        result *= gates.X(target=qubits[5], control=qubits[4])
-        result *= gates.H(target=qubits[2], control=qubits[1])
-        result *= gates.X(target=qubits[1], control=qubits[2])
-        result *= gates.X(target=qubits[3], control=qubits[2])
-        result *= gates.X(target=qubits[4], control=qubits[3])
+        result += gates.X(target=qubits[0])
+        result += gates.X(target=qubits[5])
+        result += gates.Ry(target=qubits[1], angle=2 * triple_angle)
+        result += gates.X(target=qubits[0], control=qubits[1])
+        result += gates.X(target=qubits[4], control=qubits[1])
+        result += gates.X(target=qubits[5], control=qubits[4])
+        result += gates.H(target=qubits[2], control=qubits[1])
+        result += gates.X(target=qubits[1], control=qubits[2])
+        result += gates.X(target=qubits[3], control=qubits[2])
+        result += gates.X(target=qubits[4], control=qubits[3])
 
         self._setup += result
+        self._abstract_setup += [AbstractElement(name="SPDC", paths=[path_a, path_b])]
         return self
 
     def add_beamsplitter(self, path_a: str, path_b: str, t=0.25, steps: int = 1, join_components: bool = True,
@@ -442,10 +456,6 @@ class PhotonicSetup:
 
         modes = [k for k in a.keys()]
 
-        trotter = DecompositionFirstOrderTrotter(steps=steps, join_components=join_components,
-                                                 randomize_component_order=randomize_component_order,
-                                                 randomize=randomize)
-
         generators = []
         for mode in modes:
             hamiltonian = QubitHamiltonian.init_zero()
@@ -453,13 +463,15 @@ class PhotonicSetup:
             hamiltonian -= creation(qubits=b[mode].qubits) * anihilation(qubits=a[mode].qubits)
             generators.append(phi * hamiltonian)
 
-        result = trotter(generators=generators, coeffs=[t] * len(generators))
+        parameters = gates.TrotterParameters(join_components=join_components, randomize_component_order=randomize_component_order, randomize=randomize)
+        result = gates.Trotterized(generators=generators, steps=steps, parameters=parameters, angles=t)
         self._setup += result
+        self._abstract_setup += [AbstractElement(name="BS(\\theta)", paths=[path_a, path_b])]
 
         # return self for chaining
         return self
 
-    def prepare_unary_type_state(self, state: PhotonicStateVector, daggered:bool=False):
+    def prepare_unary_type_state(self, state: PhotonicStateVector, daggered: bool = False):
         """
         This will do some calculations, so only use it to debug
         :return: adds the preparation of the state to the setup, returns self for chaining
@@ -471,8 +483,10 @@ class PhotonicSetup:
         U = USP(wfn=state.state)
         if daggered:
             self._setup += U.dagger()
+            self._abstract_setup += [AbstractElement(name="U^\dagger(\\theta)", paths=[k for k in state.paths.keys()])]
         else:
             self._setup += U
+            self._abstract_setup += [AbstractElement(name="U(\\theta)", paths=[k for k in state.paths.keys()])]
         return self
 
     def add_circuit(self, U):
@@ -482,4 +496,27 @@ class PhotonicSetup:
         :return: self for chaining
         """
         self._setup += U
+        self._abstract_setup += [AbstractElement(name="U(\\theta)", paths=[k for k in self.paths.keys()])]
         return self
+
+    def export_to_qpic(self, filename=None) -> str:
+        result = ""
+
+        # define wires
+        for p in self.paths.keys():
+            result += "style=thick "+ p + " W " + p + "\n"
+
+        for p in self.paths.keys():
+            result += p + " / \n"
+
+        for element in self._abstract_setup:
+            for p in element.paths:
+                result += str(p) + " "
+            result += " G $" + element.name + "$ width=" + str(
+                30 + len(element.name)) + " \n"
+
+        if filename is not None:
+            with open(filename, "w") as file:
+                file.write(result)
+
+        return result

@@ -1,7 +1,7 @@
-from openvqe.simulator import QubitWaveFunction
+from openvqe import QubitWaveFunction
 from photonic import PhotonicPaths, PhotonicSetup, PhotonicStateVector
-from numpy import pi, exp, sqrt
-from openvqe.simulator.simulator_cirq import SimulatorCirq
+from numpy import sqrt
+from openvqe.simulators.simulator_cirq import SimulatorCirq
 from openvqe import BitString
 
 import pytest

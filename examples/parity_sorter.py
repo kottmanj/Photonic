@@ -9,8 +9,8 @@ You need to change the paths of course
 #sys.path.append("/home/jsk/projects/photonic-qc/code/")
 
 from photonic import PhotonicSetup
-from openvqe.simulator.simulator_qiskit import SimulatorQiskit
-from openvqe.simulator.simulator_cirq import SimulatorCirq
+from openvqe.simulators.simulator_qiskit import SimulatorQiskit
+from openvqe.simulators.simulator_cirq import SimulatorCirq
 
 """
 Here we create a parity sort setup from BeamSplitter and DovePrism

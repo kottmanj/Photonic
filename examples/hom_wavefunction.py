@@ -10,8 +10,9 @@ You need to change the paths of course
 
 
 from photonic import PhotonicSetup, PhotonicStateVector
-from openvqe.simulator.simulator_cirq import SimulatorCirq
-from openvqe.simulator.simulator_pyquil import SimulatorPyquil
+from openvqe.simulators.simulator_cirq import SimulatorCirq
+from openvqe.simulators.simulator_pyquil import SimulatorPyquil
+from openvqe.circuit.qpic import export_to_pdf
 from numpy import pi, sqrt
 
 """
@@ -26,7 +27,7 @@ if __name__ == "__main__":
     """
     S = 0  # Modes will run from -S ... 0 ... +S
     qpm = 2  # Qubits per mode
-    trotter_steps = 1  # number of trotter steps for the BeamSplitter
+    trotter_steps = 32  # number of trotter steps for the BeamSplitter
     simulator = SimulatorCirq()  # Pick the Simulator
     # Alternatives
     # SimulatorCirq: Googles simulator
@@ -42,12 +43,14 @@ if __name__ == "__main__":
     # the beam splitter is parametrized as phi=i*pi*t
     setup.add_beamsplitter(path_a='a', path_b='b', t=0.25, steps=trotter_steps)
 
+    #setup.export_to_qpic(filename="hom_setup.qpic")
+    #export_to_pdf(filename="hom_setup", circuit="hom_setup")
+
     # result of the simulation
     wfn = setup.simulate_wavefunction(initial_state="+1.0|1>_a|1>_b", simulator=simulator)
 
     # this is the state that we would expect
-    expected_wfn = setup.initialize_state(state=str(1.0 / sqrt(2)) + "|2>_a|0>_b+" + str(
-        -1.0 / sqrt(2)) + "|0>_a|2>_b")
+    expected_wfn = setup.initialize_state(state=str(1.0 / sqrt(2)) + "|2>_a|0>_b+" + str(-1.0 / sqrt(2)) + "|0>_a|2>_b")
 
     print("result  = ", wfn)
     print("ideal   = ", expected_wfn)

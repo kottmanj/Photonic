@@ -3,7 +3,7 @@ from openvqe import dataclass
 from openvqe.circuit import Variable, gates
 from openvqe.simulator.simulator_cirq import SimulatorCirq
 from matplotlib import pyplot as plt
-
+from openvqe.circuit.qpic import export_to_pdf
 import multiprocessing as mp
 
 

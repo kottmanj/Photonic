@@ -13,6 +13,7 @@ from openvqe.simulator.simulator_qiskit import SimulatorQiskit
 from openvqe.simulator import Simulator
 # parallel env
 import multiprocessing as mp
+from openvqe.circuit.qpic import export_to_pdf
 
 """
 Here we creating Hong-Ou-Mandel States with a single beam splitter

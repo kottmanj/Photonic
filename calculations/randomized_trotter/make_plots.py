@@ -48,6 +48,7 @@ if __name__ == "__main__":
             continue
         
         from matplotlib import pyplot as plt
+        plt.rcParams.update({'font.size': 50})
         plt.ylabel("counts")
         plt.xlabel("state")
         plt.ylim(0,1000)

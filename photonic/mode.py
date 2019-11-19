@@ -3,9 +3,8 @@ Wrappers to represent photonic modes by multiple qubits
 """
 from typing import Dict, List
 from copy import deepcopy
-from openvqe.simulator import QubitWaveFunction
+from openvqe import QubitWaveFunction, BitString, BitNumbering
 from openvqe.tools.convenience import number_to_string
-from openvqe import BitString, BitNumbering
 from numpy import isclose
 
 
