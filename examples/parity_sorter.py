@@ -8,9 +8,8 @@ You need to change the paths of course
 #sys.path.append("/home/jsk/projects/OpenVQE/")
 #sys.path.append("/home/jsk/projects/photonic-qc/code/")
 
-from photonic import PhotonicSetup
-from openvqe.simulators.simulator_qiskit import SimulatorQiskit
-from openvqe.simulators.simulator_cirq import SimulatorCirq
+import photonic
+import tequila as tq
 
 """
 Here we create a parity sort setup from BeamSplitter and DovePrism
@@ -45,7 +44,7 @@ if __name__ == "__main__":
     # i.e. |100>_a|100>b means: 1 photon in mode -1 in path a, and the same for path b
     # note that the initial state has to be denoted consistently with S
     # so if S=2 the same state would be |01000>_a|01000>
-    simulator = SimulatorQiskit()   # Pick the Simulator
+    simulator = tq.simulators.SimulatorQiskit()   # Pick the Simulator
     # Alternatives
     # SimulatorCirq: Googles simulator
     # SimulatorQiskit: IBM simulator
@@ -56,7 +55,7 @@ if __name__ == "__main__":
     Here comes the actual code
     """
 
-    setup = PhotonicSetup(pathnames=['a', 'b'], S=S, qpm=qpm)
+    setup = photonic.PhotonicSetup(pathnames=['a', 'b'], S=S, qpm=qpm)
     setup.add_beamsplitter(path_a='a', path_b='b', t=0.25, steps=trotter_steps)
     setup.add_doveprism(path='a', t=1.0)
     setup.add_beamsplitter(path_a='a', path_b='b', t=0.25, steps=trotter_steps)

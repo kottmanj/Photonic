@@ -1,8 +1,8 @@
-from openvqe import QubitWaveFunction
+from tequila import QubitWaveFunction
 from photonic import PhotonicPaths, PhotonicSetup, PhotonicStateVector
 from numpy import sqrt
-from openvqe.simulators.simulator_cirq import SimulatorCirq
-from openvqe import BitString
+from tequila.simulators.simulator_cirq import SimulatorCirq
+from tequila import BitString
 
 import pytest
 

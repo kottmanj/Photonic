@@ -467,14 +467,16 @@ class PhotonicSetup:
         assert (len(self.paths[path_a]) == len(self.paths[path_b]))
         assert (self.paths[path_a].keys() == self.paths[path_b].keys())
 
-        omega = pi * -2.0  # Tequila uses the same angle convention for Trotterization as for QubitRotations, therefore the -2 here
-
         # convenience
         a = self.paths[path_a]
         b = self.paths[path_b]
 
-        modes = [k for k in a.keys()]
+        # Tequila uses the same angle convention for Trotterization as for QubitRotations, therefore the -2 here
+        # the t parameter is added as angles to the TrotterizedGate
+        omega = pi * -2.0
         phase = exp(1j * phi)
+
+        modes = [k for k in a.keys()]
         generators = []
         for mode in modes:
             hamiltonian = tq.hamiltonian.QubitHamiltonian.init_zero()
