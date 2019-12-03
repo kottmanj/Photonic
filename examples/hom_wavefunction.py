@@ -25,7 +25,7 @@ if __name__ == "__main__":
     S = 0  # Modes will run from -S ... 0 ... +S
     qpm = 2  # Qubits per mode
     trotter_steps = 32  # number of trotter steps for the BeamSplitter
-    simulator = tq.simulators.SimulatorCirq()  # Pick the Simulator
+    simulator = tq.simulators.SimulatorQulacs()  # Pick the Simulator
     # Alternatives
     # SimulatorCirq: Googles simulator
     # SimulatorPyquil: Rigettis simulator, the quantum virtual machine needs to run in the background

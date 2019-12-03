@@ -231,6 +231,7 @@ class PhotonicSetup:
 
     def prepare_332_state(self, path_a: str, path_b: str, path_c: str, daggered=False):
         """
+        332 as '-+- 000 --+'
         :return: A circuit which prepares the photonic 332 state in qubit representation
         """
 
@@ -416,6 +417,36 @@ class PhotonicSetup:
         self._abstract_setup += [AbstractElement(name="R", paths=[path])]
         return self
 
+    def add_one_photon_projector_plus(self, path: str, daggered: bool = True, delete_active_path: bool = True):
+        """
+        same as parametrized_one_photon_projector but hard-wired to the state: |0> + |1>
+        meaning one photon in mode 0 and one photon in mode 1
+        for S=1 this looks like: |010>_path + |001>_path
+        for S=2 |00100>_path - |00010>_path
+        :param path: the path where the projector adds
+        :param daggered: other way, for testing
+        :return: adds the element to the setup and returns self for chaining
+        """
+        assert self.S > 0
+
+        # identify the significant qubits encoding occs 0 and 1 in modes 0 and 1
+        qubits = [mode.qubits[-1] for mode in [self.paths[path][0], self.paths[path][1]]]
+
+        result = tq.gates.H(target=qubits[1])
+        result += tq.gates.X(target=qubits[0], control=qubits[1])
+        result += tq.gates.X(target=qubits[1])
+
+        if daggered:
+            self._setup += result.dagger()
+        else:
+            self._setup += result
+
+        self.heralding = PhotonicHeraldingProjector(paths=self.paths, active_path=path,
+                                                    delete_active_path=delete_active_path)
+
+        self._abstract_setup += [AbstractElement(name="R", paths=[path])]
+        return self
+
     def prepare_SPDC_state(self, path_a: str, path_b: str):
         triple_angle = 0.9553166181245093
         qubits = []
@@ -440,7 +471,7 @@ class PhotonicSetup:
         result += tq.gates.X(target=qubits[0], control=qubits[1])
         result += tq.gates.X(target=qubits[4], control=qubits[1])
         result += tq.gates.X(target=qubits[5], control=qubits[4])
-        result += tq.gates.H(target=qubits[2], control=qubits[1])
+        result += tq.gates.Ry(target=qubits[2], control=qubits[1], angle=pi/2)
         result += tq.gates.X(target=qubits[1], control=qubits[2])
         result += tq.gates.X(target=qubits[3], control=qubits[2])
         result += tq.gates.X(target=qubits[4], control=qubits[3])
