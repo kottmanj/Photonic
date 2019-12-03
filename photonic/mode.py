@@ -3,8 +3,8 @@ Wrappers to represent photonic modes by multiple qubits
 """
 from typing import Dict, List
 from copy import deepcopy
-from openvqe import QubitWaveFunction, BitString, BitNumbering
-from openvqe.tools.convenience import number_to_string
+from tequila import QubitWaveFunction, BitString, BitNumbering
+from tequila.tools.convenience import number_to_string
 from numpy import isclose
 
 
@@ -171,27 +171,41 @@ class PhotonicStateVector:
         result = cls(paths)
         terms = string.split('+')
         for term in terms:
-            basis_state = dict()
+
             tmp = term.split("|")
-            coeff = None
             if tmp[0] == '':
                 coeff = 1.0
             else:
                 coeff = complex(tmp[0])
-            for i in range(1, len(tmp)):
-                bs = tmp[i].rstrip().lstrip()
-                path = bs[-1]
-                occs = bs.split(">")[0]
-                M = len(occs)
-                S = (M - 1) // 2
-                modes = dict()
-                for j, m in enumerate(range(-S, S + 1)):
-                    modes[m] = int(occs[j])
-                basis_state[path] = modes
+
+            basis_state = cls.string_to_basis_state(string=term)
             result.add_basis_state(state=basis_state, coeff=coeff)
         return result
 
+    @classmethod
+    def string_to_basis_state(cls, string: str) -> Dict[str, Dict[int, int]]:
+        """
+        :param string: basis state in the form |x>_a|y>_b|z>_c ...
+        :return: Dictionary in the form {path: {mode:occ}}
+        """
+        basis_state = dict()
+        tmp = string.split("|")
+        for i in range(1, len(tmp)):
+            bs = tmp[i].rstrip().lstrip()
+            path = bs[-1]
+            occs = bs.split(">")[0]
+            M = len(occs)
+            S = (M - 1) // 2
+            modes = dict()
+            for j, m in enumerate(range(-S, S + 1)):
+                modes[m] = int(occs[j])
+            basis_state[path] = modes
+        return basis_state
+
     def add_basis_state(self, state: Dict[str, Dict[int, int]], coeff=1):
+        if isinstance(state, str):
+            state = self.string_to_basis_state(string=state)
+
         qubit_string = BitString.from_int(integer=0, nbits=self.n_qubits)
         for p, v in state.items():
             for m, occ in v.items():
@@ -200,6 +214,28 @@ class PhotonicStateVector:
                 for i, q in enumerate(mode.qubits):
                     qubit_string[q] = occ[i]
         self._state += QubitWaveFunction.from_int(i=qubit_string, coeff=coeff)
+
+    def get_qubit_key(self, state):
+        qubit_string = BitString.from_int(integer=0, nbits=self.n_qubits)
+        for p, v in state.items():
+            for m, occ in v.items():
+                mode = self.get_mode(p, m)
+                occ = BitString.from_int(integer=occ, nbits=mode.n_qubits)
+                for i, q in enumerate(mode.qubits):
+                    qubit_string[q] = occ[i]
+        return qubit_string
+
+    def get_basis_state(self, string:str):
+        """
+        :param string: basis state in the form |x>_a|y>_b|z>_c ...
+        :return: the coefficient/count_number of that basis state in the full state
+        """
+        basis_state = self.string_to_basis_state(string=string)
+        key = self.get_qubit_key(basis_state)
+        if key in self._state.keys():
+            return self._state[key]
+        else:
+            return 0
 
     @property
     def numbering(self):

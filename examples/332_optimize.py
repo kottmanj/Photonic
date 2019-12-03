@@ -1,10 +1,10 @@
 from photonic import PhotonicSetup
-from openvqe.simulators.simulator_cirq import SimulatorCirq
-from openvqe.circuit import Variable
-from openvqe.optimizers import scipy_optimizers
-from openvqe import Objective
-from openvqe import paulis
-from openvqe.circuit import export_to_pdf
+from tequila.simulators.simulator_cirq import SimulatorCirq
+from tequila.circuit import Variable
+from tequila import optimizer_scipy
+from tequila import Objective
+from tequila import paulis
+
 
 """
 Set The Parameters here:
@@ -33,20 +33,19 @@ if __name__ == "__main__":
     setup = PhotonicSetup(pathnames=['a', 'b', 'c', 'd'], S=S, qpm=qpm)
     setup.prepare_SPDC_state(path_a='a', path_b='b')
     setup.prepare_SPDC_state(path_a='c', path_b='d')
-    setup.add_beamsplitter(path_a='b', path_b='c', t=0.25, steps=trotter_steps, randomize=randomize,
-                           join_components=join_components, randomize_component_order=randomize_component_order)
+    setup.add_beamsplitter(path_a='b', path_b='c', t=0.25, steps=trotter_steps)
     setup.add_doveprism(path='c', t=param_dove)
-    setup.add_beamsplitter(path_a='b', path_b='c', t=0.25, steps=trotter_steps, randomize=randomize,
-                           join_components=join_components, randomize_component_order=randomize_component_order)
+    setup.add_beamsplitter(path_a='b', path_b='c', t=0.25, steps=trotter_steps)
     setup.add_one_photon_projector(path='a', daggered=True, delete_active_path=True)
     setup.prepare_332_state(path_a='b', path_b='c', path_c='d', daggered=True)
 
     U = setup.setup
-    export_to_pdf(circuit=U, filename="setup_full")
     H = construct_hamiltonian(n_qubits=U.n_qubits)
     O = Objective(unitaries=U, observable=factor * H)
 
-    result = scipy_optimizers.minimize(simulator=simulator, tol=1.e-1, objective=O, samples=None, method="TNC")
+    print(O.extract_variables())
+
+    result = optimizer_scipy.minimize(simulator=simulator, tol=1.e-1, objective=O, samples=None, method="TNC")
 
     result.history.plot()
     result.history.plot('angles')
