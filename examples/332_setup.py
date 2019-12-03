@@ -1,10 +1,6 @@
 from photonic import PhotonicSetup, PhotonicStateVector, PhotonicPaths
-from openvqe.simulators.simulator_qiskit import SimulatorQiskit
-from openvqe.simulators.simulator_cirq import SimulatorCirq
 from photonic.elements import PhotonicHeralder
-from openvqe import BitString
-from openvqe.circuit import Variable
-from openvqe.circuit.qpic import export_to_pdf
+import tequila as tq
 
 if __name__ == "__main__":
 
@@ -17,12 +13,12 @@ if __name__ == "__main__":
         qpm = 1  # Qubits per mode
         trotter_steps = 1  # number of trotter steps for the BeamSplitter
         samples = 100000  # number of samples to simulate
-        simulator = SimulatorCirq()  # Pick the Simulator
+        simulator = tq.simulators.SimulatorCirq()  # Pick the Simulator
         # Alternatives
         # SimulatorCirq: Googles simulator
         # SimulatorQiskit: IBM simulator
 
-        param_dove = Variable(name="t", value=t)
+        param_dove = tq.Variable(name="t", value=t)
 
         # Trotterization setup
         randomize = False

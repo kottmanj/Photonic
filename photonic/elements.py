@@ -313,16 +313,20 @@ class PhotonicSetup:
         self._abstract_setup += [AbstractElement(name="DP(\\phi)", paths=[path])]
         return self
 
-    def add_phase_shifter(self, t, path: str, mode: int = 0):
+    def add_phase_shifter(self, t, path: str, mode: int = None):
         """
         Add a phase shift to specific mode in given path
         :param t : The phase is parametrized by t: phase=exp(-i*pi*t)
         :param path: the given path
-        :param mode: the mode (currently only for mode independent setups)
+        :param mode: the mode, if None then the phase shifter will act on all modes
         """
-        assert (mode == 0)
-        self._setup += QuditS(target=self.paths[path][mode], t=t)
-        self._abstract_setup += [AbstractElement(name="PS(\\phi)", paths=[path])]
+        modes = [mode]
+        if mode is None:
+            modes = self.paths[path].keys()
+
+        for key in modes:
+            self._setup += QuditS(target=self.paths[path][key], t=t)
+            self._abstract_setup += [AbstractElement(name="PS(\\phi)", paths=[path])]
         return self
 
     def add_hologram(self, path: str):
@@ -333,7 +337,7 @@ class PhotonicSetup:
         for k in sorted_keys:
             if k - 1 not in sorted_keys:
                 break
-            result *= QuditSWAP(mode1=p[k], mode2=p[k - 1])
+            result += QuditSWAP(mode1=p[k], mode2=p[k - 1])
 
         self._setup += result
         self._abstract_setup += [AbstractElement(name="H", paths=[path])]

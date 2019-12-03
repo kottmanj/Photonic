@@ -9,12 +9,9 @@ You need to change the paths of course
 #sys.path.append("/home/jsk/projects/photonic-qc/code/")
 
 
-from photonic import PhotonicSetup, PhotonicStateVector
-from openvqe.simulators.simulator_cirq import SimulatorCirq
-from openvqe.simulators.simulator_pyquil import SimulatorPyquil
-from openvqe.circuit.qpic import export_to_pdf
-from numpy import pi, sqrt
-
+import tequila as tq
+import photonic
+from numpy import sqrt
 """
 Here we creating Hong-Ou-Mandel States with a single beam splitter
 In this notebook the full wavefunction is simulated
@@ -28,7 +25,7 @@ if __name__ == "__main__":
     S = 0  # Modes will run from -S ... 0 ... +S
     qpm = 2  # Qubits per mode
     trotter_steps = 32  # number of trotter steps for the BeamSplitter
-    simulator = SimulatorCirq()  # Pick the Simulator
+    simulator = tq.simulators.SimulatorCirq()  # Pick the Simulator
     # Alternatives
     # SimulatorCirq: Googles simulator
     # SimulatorPyquil: Rigettis simulator, the quantum virtual machine needs to run in the background
@@ -38,7 +35,7 @@ if __name__ == "__main__":
     Here comes the code:
     """
 
-    setup = PhotonicSetup(pathnames=['a', 'b'], S=S, qpm=qpm)
+    setup = photonic.PhotonicSetup(pathnames=['a', 'b'], S=S, qpm=qpm)
 
     # the beam splitter is parametrized as phi=i*pi*t
     setup.add_beamsplitter(path_a='a', path_b='b', t=0.25, steps=trotter_steps)

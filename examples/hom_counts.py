@@ -8,11 +8,8 @@ You need to change the paths of course
 #sys.path.append("/home/jsk/projects/OpenVQE/")
 #sys.path.append("/home/jsk/projects/photonic-qc/code/")
 
-from photonic import PhotonicSetup, PhotonicStateVector
-from openvqe.simulators.simulator_cirq import SimulatorCirq
-from openvqe.simulators.simulator_qiskit import SimulatorQiskit
-from numpy import pi, sqrt
-from openvqe.circuit.qpic import export_to_pdf
+import photonic
+import tequila as tq
 
 """
 Here we creating Hong-Ou-Mandel States with a single beam splitter
@@ -32,9 +29,9 @@ if __name__ == "__main__":
     S = 0                           # Modes will run from -S ... 0 ... +S
     qpm = 2                         # Qubits per mode
     initial_state="|1>_a|1>_b"      # Notation has to be consistent with your S
-    trotter_steps = 2               # number of trotter steps for the BeamSplitter
-    samples = 100                   # number of samples to simulate
-    simulator = SimulatorQiskit()   # Pick the Simulator
+    trotter_steps = 20               # number of trotter steps for the BeamSplitter
+    samples = 1000                   # number of samples to simulate
+    simulator = tq.simulators.SimulatorQiskit()   # Pick the Simulator
     # Alternatives
     # SimulatorCirq: Googles simulator
     # SimulatorQiskit: IBM simulator
@@ -42,13 +39,13 @@ if __name__ == "__main__":
     # Pyquil is broken currently ... Sorry
 
 
-    setup = PhotonicSetup(pathnames=['a', 'b'], S=S, qpm=qpm)
+    setup = photonic.PhotonicSetup(pathnames=['a', 'b'], S=S, qpm=qpm)
 
     # the beam splitter is parametrized as phi=i*pi*t
     setup.add_beamsplitter(path_a='a', path_b='b', t=0.25, steps=trotter_steps)
 
 
-    export_to_pdf(circuit=setup.setup, filename="hom_setup")
+    tq.circuit.qpic.export_to_pdf(circuit=setup.setup, filename="hom_setup")
     # need explicit circuit for initial state
     counts = setup.run(samples=100, initial_state=initial_state, simulator=simulator)
     print("counts=", counts)
