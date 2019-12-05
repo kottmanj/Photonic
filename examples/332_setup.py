@@ -1,7 +1,7 @@
 """
 This is the GHZ setup with optimized parameters
 """
-import photonic # works for sure with 9e2199848d2f1757ae3f78892e0912787aadf5dd
+import photonic # works with 9e2199848d2f1757ae3f78892e0912787aadf5dd
 import tequila as tq # and corresponding acca734d6a6dcf70c19bc2711dc4ce23f91ef242
 
 # parameters
