@@ -26,9 +26,10 @@ if __name__ == "__main__":
     setup.add_beamsplitter(path_a=b, path_b=c, t=0.25, steps=steps)
 
     # setup.add_mirror(path=b) # add this for the ++- 000 +-+ 332 state
-    # setup.prepare_332_state(path_a=b, path_b=c, path_c=d, daggered=True)
-
-    setup.add_parametrized_one_photon_projector(path=a, angles=[3.141287054029686/2, -3.141287054029686])
+     #setup.prepare_332_state(path_a=b, path_b=c, path_c=d, daggered=True)
+    #2.214269984020705 -> fake minimum (minimum without post-selection)
+    #3.141287054029686 / 2 -> real post-selected minimum
+    setup.add_parametrized_one_photon_projector(path=a, angles=[3.141287054029686 / 2, -3.141287054029686])
     #setup.add_one_photon_projector(path=a, daggered=True, delete_active_path=True)
 
     setup.export_to_qpic(filename="332_setup")
@@ -39,6 +40,8 @@ if __name__ == "__main__":
     heralder = photonic.elements.PhotonicHeralder(paths=projected.paths)
     heralded = photonic.PhotonicStateVector(state=heralder(projected.state), paths=projected.paths)
 
-    print("full-wfn\n", wfn)
-    print("projected\n", projected)
-    print("heralded \n", heralded)
+    print("full-wfn   \n", wfn)
+    print("projected  \n", projected)
+    print("normalized \n", projected.normalize())
+    print("heralded   \n", heralded)
+    print("normalized \n", heralded.normalize())

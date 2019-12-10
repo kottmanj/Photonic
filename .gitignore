@@ -1,3 +1,10 @@
+# stuff that is produced by examples
+*.pdf
+*.tex
+*.qpic
+*.pickle
+
+.*
 .idea*
 *__pychache__*
 

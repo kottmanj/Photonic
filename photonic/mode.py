@@ -286,6 +286,10 @@ class PhotonicStateVector:
         if state is None:
             self._state = QubitWaveFunction()
 
+    def normalize(self):
+        self._state = self._state.normalize()
+        return self
+
     def __repr__(self):
         threshold = 1.e-3
         result = ""
