@@ -14,7 +14,7 @@ Set The Parameters here:
 """
 S = 1  # Modes will run from -S ... 0 ... +S
 qpm = 1  # Qubits per mode
-trotter_steps = 1  # number of trotter steps for the BeamSplitter
+trotter_steps = 3  # number of trotter steps for the BeamSplitter
 simulator = simulators.SimulatorQulacs()  # Pick the Simulator
 # Trotterization setup
 randomize = False
@@ -39,10 +39,10 @@ def construct_projector(path):
         qubits += m.qubits
     for i in qubits:
         H *= (paulis.I(i) + paulis.Z(i))
-    return H
+    return  (1.0 / 2.0) ** len(qubits) * H
 
 if __name__ == "__main__":
-    param_dove = Variable(name="t", value=0.7)
+    param_dove = Variable(name="t", value=1.0)
 
     setup = PhotonicSetup(pathnames=['a', 'b', 'c', 'd'], S=S, qpm=qpm)
     setup.prepare_SPDC_state(path_a='a', path_b='b')
@@ -61,8 +61,12 @@ if __name__ == "__main__":
     O = E0/E1
     print(O.extract_variables())
 
+    E = simulators.SimulatorQulacs().simulate_objective(objective=E0)
+    print("E0=", E)
+    E = simulators.SimulatorQulacs().simulate_objective(objective=E1)
+    print("E1=", E)
     E = simulators.SimulatorQulacs().simulate_objective(objective=O)
-    print("E=", E)
+    print("O=", E)
 
     result = optimizer_scipy.minimize(simulator=simulator, tol=1.e-3, objective=O, samples=None, method="BFGS", silent=False)
 
