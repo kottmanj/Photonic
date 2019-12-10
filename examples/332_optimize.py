@@ -4,6 +4,9 @@ from tequila.circuit import Variable
 from tequila import optimizer_scipy
 from tequila import Objective
 from tequila import paulis
+from tequila import simulators
+
+import pickle
 
 
 """
@@ -12,12 +15,12 @@ Set The Parameters here:
 S = 1  # Modes will run from -S ... 0 ... +S
 qpm = 1  # Qubits per mode
 trotter_steps = 1  # number of trotter steps for the BeamSplitter
-simulator = SimulatorCirq()  # Pick the Simulator
+simulator = simulators.SimulatorQulacs()  # Pick the Simulator
 # Trotterization setup
 randomize = False
 randomize_component_order = False
 join_components = False
-factor = 1000.0
+factor = 1.0
 
 
 def construct_hamiltonian(n_qubits):
@@ -26,9 +29,20 @@ def construct_hamiltonian(n_qubits):
         H *= (paulis.I(i) + paulis.Z(i))
     return -(1.0 / 2.0) ** n_qubits * H
 
+def construct_projector(path):
+    """
+    The projector on path a which projects onto |000...0><000...0|
+    """
+    H = paulis.QubitHamiltonian()
+    qubits = []
+    for m in path.values():
+        qubits += m.qubits
+    for i in qubits:
+        H *= (paulis.I(i) + paulis.Z(i))
+    return H
 
 if __name__ == "__main__":
-    param_dove = Variable(name="t", value=0.25)
+    param_dove = Variable(name="t", value=0.7)
 
     setup = PhotonicSetup(pathnames=['a', 'b', 'c', 'd'], S=S, qpm=qpm)
     setup.prepare_SPDC_state(path_a='a', path_b='b')
@@ -41,11 +55,16 @@ if __name__ == "__main__":
 
     U = setup.setup
     H = construct_hamiltonian(n_qubits=U.n_qubits)
-    O = Objective(unitaries=U, observable=factor * H)
-
+    P = construct_projector(path=setup.paths['a'])
+    E0 = Objective.ExpectationValue(U=U, H=factor*H)
+    E1 = Objective.ExpectationValue(U=U, H=P)
+    O = E0/E1
     print(O.extract_variables())
 
-    result = optimizer_scipy.minimize(simulator=simulator, tol=1.e-1, objective=O, samples=None, method="TNC")
+    E = simulators.SimulatorQulacs().simulate_objective(objective=O)
+    print("E=", E)
+
+    result = optimizer_scipy.minimize(simulator=simulator, tol=1.e-3, objective=O, samples=None, method="BFGS", silent=False)
 
     result.history.plot()
     result.history.plot('angles')
