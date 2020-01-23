@@ -43,7 +43,7 @@ def construct_projector(path):
 if __name__ == "__main__":
     param_dove = 1.0
     param_bs = 0.25
-    angle0 = tq.Variable(name="angle0", value=3.141287054029686 / 2)  # this is the optimum
+    angle0 = tq.Variable(name="angle0", value=2.214276463967408)#3.141287054029686 / 2)  # this is the optimum
     angle1 = tq.Variable(name="angle1", value=-3.141287054029686)  # this is the optimum
 
     setup = PhotonicSetup(pathnames=['a', 'b', 'c', 'd'], S=S, qpm=qpm)
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     setup.add_beamsplitter(path_a='b', path_b='c', t=param_bs, steps=trotter_steps)
     setup.add_doveprism(path='c', t=param_dove)
     setup.add_beamsplitter(path_a='b', path_b='c', t=param_bs, steps=trotter_steps)
-    setup.add_one_photon_projector(path='a', daggered=True, delete_active_path=True)
+    setup.add_parametrized_one_photon_projector(path='a', angles=[angle0, angle1])
     setup.prepare_332_state(path_a='b', path_b='c', path_c='d', daggered=True)
 
     U = setup.setup
@@ -61,11 +61,16 @@ if __name__ == "__main__":
     E0 = tq.Objective.ExpectationValue(U=U, H=factor * H)
     E1 = tq.Objective.ExpectationValue(U=U, H=P)
     O = E0 / E1
-    print(O.extract_variables())
 
-    O.update_variables(variables={"angle0": 1.0, "angle1": -1.0})
-    result = tq.optimizer_scipy.minimize(simulator=simulator, tol=1.e-4, objective=O, samples=None, method="BFGS",
-                                      silent=False)
+    print(O.extract_variables())
+    vE0 = simulator.simulate_objective(E0)
+    vE1 = simulator.simulate_objective(E1)
+    print("E0=", vE0)
+    print("E1=", vE1)
+    print("E0/E1", vE0/vE1)
+
+    #O.update_variables(variables={"angle0": 1.0, "angle1": -1.0})
+    result = tq.optimizer_scipy.minimize(simulator=simulator, tol=1.e-4, objective=O, samples=None, method="BFGS", silent=False)
 
     # @me
     # don't do this on clusters

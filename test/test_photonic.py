@@ -1,7 +1,6 @@
 from tequila import QubitWaveFunction
 from photonic import PhotonicPaths, PhotonicSetup, PhotonicStateVector
 from numpy import sqrt
-from tequila.simulators.simulator_cirq import SimulatorCirq
 from tequila import BitString
 
 import pytest
@@ -143,7 +142,7 @@ def test_dove_prism(inout, silent=False):
     end = setup.simulate_wavefunction(initial_state=istate)
 
     if not silent:
-        print(SimulatorCirq().create_circuit(abstract_circuit=setup.setup))
+        print(setup.setup)
         print("t       =", t)
         print("start   =", istate)
         print("end     =", end)
@@ -151,7 +150,7 @@ def test_dove_prism(inout, silent=False):
     assert (end == ostate)
 
 
-def test_SPDC(silent=True):
+def test_SPDC(silent=False):
     # Qubit Wavefunction for the expeced state:
     # here are the three basis functions for the -2,-1,0,1,2 mode representation
     # where each mode has 2 qubits
@@ -186,11 +185,10 @@ def test_SPDC(silent=True):
     end = setup.simulate_wavefunction()
 
     if not silent:
-        print("SPDC Circuit:\n", SimulatorCirq().create_circuit(abstract_circuit=setup.setup))
         print("S       =", S)
         print("q per m =", qpm)
-        print("end     =", end)
         print("expected=", expected)
+        print("end     =", end)
     assert (end == expected)
 
 
@@ -228,7 +226,7 @@ def test_332(silent=False):
             return "+" + str(coeff) + "|" + one_photon_path(occ_mode=a) + ">_a|" + one_photon_path(
                 occ_mode=b) + ">_b|" + one_photon_path(occ_mode=c) + ">_c"
 
-        return PhotonicStateVector.from_string(paths=paths, string=term(1, -1, 1) + term(0, 0, 0) + term(-1, 1, 1))
+        return PhotonicStateVector.from_string(paths=paths, string=term(-1, 1, -1) + term(0, 0, 0) + term(-1, -1, 1))
 
     for S in [1, 2]:
         for qpm in [1, 2]:
@@ -251,7 +249,7 @@ def test_332(silent=False):
             setup.prepare_332_state(path_a='a', path_b='b', path_c='c')
 
             if not silent:
-                print("332 Circuit:\n", SimulatorCirq().create_circuit(abstract_circuit=setup.setup))
+                print(setup.setup)
                 print("Paths:\n", paths)
 
             end = setup.simulate_wavefunction()

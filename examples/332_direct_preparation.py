@@ -1,14 +1,4 @@
-from photonic import PhotonicSetup, PhotonicStateVector, PhotonicPaths
-from openvqe.simulators.simulator_qiskit import SimulatorQiskit
-from openvqe.simulators.simulator_cirq import SimulatorCirq
-from photonic.elements import PhotonicHeralder
-from openvqe import BitString
-from openvqe.circuit import Variable
-from openvqe.circuit.qpic import export_to_pdf
-
-from openvqe.apps.unary_state_prep import UnaryStatePrep
-
-from openvqe import gates
+from photonic import PhotonicSetup
 
 if __name__ == "__main__":
     S = 1  # Modes will run from -S ... 0 ... +S
