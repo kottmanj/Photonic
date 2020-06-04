@@ -92,20 +92,20 @@ def QuditSWAP(mode1: PhotonicMode, mode2: PhotonicMode) -> tq.gates.QCircuit:
 
 def anihilation(qubits: typing.List[int] = None) -> tq.hamiltonian.QubitHamiltonian:
     max_occ = 2 ** len(qubits) - 1
-    result = tq.hamiltonian.QubitHamiltonian.init_zero()
+    result = tq.hamiltonian.QubitHamiltonian.zero()
     for occ in range(max_occ):
         c = sqrt(occ + 1)
         result += c * tq.paulis.decompose_transfer_operator(ket=occ + 1, bra=occ, qubits=qubits)
-    return result
+    return result.simplify()
 
 
 def creation(qubits: typing.List[int] = None) -> tq.hamiltonian.QubitHamiltonian:
     max_occ = 2 ** len(qubits) - 1
-    result = tq.hamiltonian.QubitHamiltonian.init_zero()
+    result = tq.hamiltonian.QubitHamiltonian.zero()
     for occ in range(max_occ):
         c = sqrt(occ + 1)
         result += c * tq.paulis.decompose_transfer_operator(ket=occ, bra=occ + 1, qubits=qubits)
-    return result
+    return result.simplify()
 
 
 class PhotonicSetup:
@@ -185,7 +185,7 @@ class PhotonicSetup:
         simresult = tq.simulate(self.setup, backend=simulator, initial_state=initial_state)
         return PhotonicStateVector(paths=self.paths, state=simresult)
 
-    def run(self, samples: int = 1, initial_state: str = None, simulator=None):
+    def sample(self, samples: int = 1, initial_state: str = None, simulator=None):
         iprep = tq.gates.QCircuit()
         if initial_state is not None:
             state = self.initialize_state(state=initial_state)
@@ -198,15 +198,12 @@ class PhotonicSetup:
 
         self._add_measurements()
 
-        if self.heralding is not None:
-            simresult = tq.simulate(iprep + self.setup, samples=samples, backend=simulator)
-            return PhotonicStateVector(paths=self.heralding.reduced_paths, state=simresult.measurements[''])
-        else:
-            if samples is None:
-                simresult = simulator.simulate_wavefunction(abstract_circuit=iprep + self.setup)
-            else:
-                simresult = simulator.run(abstract_circuit=iprep + self.setup, samples=samples)
-            return PhotonicStateVector(paths=self.paths, state=simresult.measurements[''])
+        # those are the qubit counts given back by tequila
+        qcounts = tq.simulate(iprep + self.setup, samples=samples)
+        # those are the qubit counts re-interpreted as photonic counts
+        pcounts = PhotonicStateVector(paths=self.paths, state=qcounts)
+
+        return pcounts
 
     @classmethod
     def from_paths(cls, paths: PhotonicPaths, setup: tq.gates.QCircuit = None):
@@ -505,13 +502,14 @@ class PhotonicSetup:
         modes = [k for k in a.keys()]
         generators = []
         for mode in modes:
-            hamiltonian = tq.hamiltonian.QubitHamiltonian.init_zero()
+            hamiltonian = tq.hamiltonian.QubitHamiltonian.zero()
             hamiltonian += creation(qubits=a[mode].qubits) * anihilation(qubits=b[mode].qubits)
             generators.append(omega * (phase * hamiltonian + phase.conj() * hamiltonian.dagger()))
 
         parameters = tq.gates.TrotterParameters(join_components=join_components,
                                                 randomize_component_order=randomize_component_order,
                                                 randomize=randomize)
+
         result = tq.gates.Trotterized(generators=generators, steps=steps, parameters=parameters, angles=[t]*len(generators))
         self._setup += result
         self._abstract_setup += [AbstractElement(name="BS(\\theta)", paths=[path_a, path_b])]

@@ -1,6 +1,5 @@
 """
-See also Mario dem sein Mathematica Notebook
-
+Boson sampling as described in the paper
 We have 3 Photons in 6 paths
 Photons will start in paths a,c,e
 """
@@ -14,7 +13,7 @@ import pickle
 
 S = 0
 qpm = 2
-trotter_steps = 150
+trotter_steps = 2
 
 bs_parameters = [
     0.19,
@@ -90,7 +89,9 @@ if __name__ == "__main__":
     # transform beam-splitter parameters to pi*t
     bs_parameters = [numpy.arcsin(p)/numpy.pi for p in bs_parameters]
 
-    for trotter_steps in [25]: # [1, 5, 10, 20, 40, 80, 160, 320]:
+    checksums = []
+    data= []
+    for trotter_steps in [10]: # [1, 5, 10, 20, 40, 80, 160, 320]:
 
         setup = photonic.PhotonicSetup(pathnames=[a, b, c, d, e], S=S, qpm=qpm)
 
@@ -106,58 +107,38 @@ if __name__ == "__main__":
         setup.add_circuit(U=U)
 
         setup.add_beamsplitter(path_a=a, path_b=b, t=bs_parameters[0], phi=0, steps=trotter_steps)
-        # setup.add_phase_shifter(path=a, t=-1)
-        # setup.add_phase_shifter(path=b, t=-1)
+        setup.add_phase_shifter(path=a, t=-1)
+        setup.add_phase_shifter(path=b, t=-1)
 
         setup.add_phase_shifter(path=b, t=-phase_parameters[0])
         setup.add_beamsplitter(path_a=b, path_b=c, t=bs_parameters[1], phi=0, steps=trotter_steps)
-        # setup.add_phase_shifter(path=b, t=-1)
-        # setup.add_phase_shifter(path=c, t=-1)
-        #
+
         setup.add_phase_shifter(path=a, t=-phase_parameters[1])
         setup.add_beamsplitter(path_a=a, path_b=b, t=bs_parameters[2], phi=0, steps=trotter_steps)
-        # setup.add_phase_shifter(path=a, t=-1)
-        # setup.add_phase_shifter(path=b, t=-1)
-        #
+
         setup.add_phase_shifter(path=c, t=-phase_parameters[2])
         setup.add_beamsplitter(path_a=c, path_b=d, t=bs_parameters[3], phi=0, steps=trotter_steps)
-        # setup.add_phase_shifter(path=c, t=-1)
-        # setup.add_phase_shifter(path=d, t=-1)
-        #
+
         setup.add_phase_shifter(path=c, t=-phase_parameters[3])
         setup.add_beamsplitter(path_a=b, path_b=c, t=bs_parameters[4], phi=0, steps=trotter_steps)
-        # # setup.add_phase_shifter(path=b, t=-1)
-        # # setup.add_phase_shifter(path=c, t=-1)
-        #
+
         setup.add_beamsplitter(path_a=d, path_b=e, t=bs_parameters[5], phi=0, steps=trotter_steps)
-        # # setup.add_phase_shifter(path=d, t=-1)
-        # # setup.add_phase_shifter(path=e, t=-1)
-        #
+
         setup.add_phase_shifter(path=b, t=-phase_parameters[4])
         setup.add_beamsplitter(path_a=a, path_b=b, t=bs_parameters[6], phi=0, steps=trotter_steps)
-        # # setup.add_phase_shifter(path=a, t=-1)
-        # # setup.add_phase_shifter(path=b, t=-1)
-        #
+
         setup.add_phase_shifter(path=c, t=-phase_parameters[5])
         setup.add_beamsplitter(path_a=c, path_b=d, t=bs_parameters[7], phi=0, steps=trotter_steps)
-        # # setup.add_phase_shifter(path=c, t=-1)
-        # # setup.add_phase_shifter(path=d, t=-1)
-        #
+
         setup.add_phase_shifter(path=b, t=-phase_parameters[6])
         setup.add_beamsplitter(path_a=b, path_b=c, t=bs_parameters[8], phi=0, steps=trotter_steps)
-        # # setup.add_phase_shifter(path=b, t=-1)
-        # # setup.add_phase_shifter(path=c, t=-1)
-        #
+
         setup.add_phase_shifter(path=b, t=-phase_parameters[7])
         setup.add_beamsplitter(path_a=a, path_b=b, t=bs_parameters[9], phi=0, steps=trotter_steps)
-        # # setup.add_phase_shifter(path=a, t=-1)
-        # # setup.add_phase_shifter(path=b, t=-1)
 
-        setup.export_to_qpic(filename="boson_samples_setup")
+        result = setup.simulate_wavefunction()
 
-        result = setup.simulate_wavefunction(simulator=tq.simulators.SimulatorQulacs())
-
-        print(result)
+        print("simulated wavefunction is:\n", result)
 
         all_three_photon_states = filter_three_photon_counts(result)
         # add up probabilities
@@ -186,6 +167,7 @@ if __name__ == "__main__":
         with open(filename + ".pickle", 'wb') as handle:
             pickle.dump(result, handle, protocol=pickle.HIGHEST_PROTOCOL)
         plt.savefig(filename + ".pdf")
+        # will print to terminal, add filename=... to plot to file
         plt.show()
 
         print(result)
@@ -193,5 +175,11 @@ if __name__ == "__main__":
         print("abe=",result.get_basis_state("|1>_a|1>_b|0>_c|0>_d|1>_e"))
         print("ace=",result.get_basis_state("|1>_a|0>_b|1>_c|0>_d|1>_e"))
         print("bce=",result.get_basis_state("|0>_a|1>_b|1>_c|0>_d|1>_e"))
+        checksums.append(p)
+        data.append(values)
+
+    # checksums indicate how serious the trotter error is ("unphysical photon loss")
+    print("checksums:\n", checksums)
+
 
 

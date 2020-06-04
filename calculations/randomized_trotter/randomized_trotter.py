@@ -73,7 +73,7 @@ class DoIt:
         U = gates.X(1) + gates.X(3)
         U += trotter(generators=generators)
         U += gates.Measurement(target=qubits_a + qubits_b)
-        result = SimulatorQiskit().run(abstract_circuit=U, samples=1)
+        result = SimulatorQiskit().sample(abstract_circuit=U, samples=1)
         return result.counts
 
 

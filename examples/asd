@@ -1,5 +1,0 @@
-trotter_steps : 1
-randomize : 1
-samples: 1
-runs: 10
-steps: 10

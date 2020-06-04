@@ -294,7 +294,7 @@ def test_parametrized_projector(qpm):
     wfn = setup.simulate_wavefunction()
     assert (str(PhotonicStateVector.from_string(paths=setup.paths, string="1.0|000>_a|111>_b")) == str(wfn))
 
-    counts = setup.run(samples=100)
+    counts = setup.sample(samples=100)
     reduced_paths = PhotonicPaths(path_names=['b'], S=S, qpm=qpm)
     assert (str(PhotonicStateVector.from_string(paths=reduced_paths, string="100|111>_b")) == str(counts))
 
@@ -310,7 +310,7 @@ def test_projector(qpm):
     wfn = setup.simulate_wavefunction()
     assert (str(PhotonicStateVector.from_string(paths=setup.paths, string="1.0|000>_a|111>_b")) == str(wfn))
 
-    counts = setup.run(samples=100)
+    counts = setup.sample(samples=100)
     reduced_paths = PhotonicPaths(path_names=['b'], S=S, qpm=qpm)
     assert (str(PhotonicStateVector.from_string(paths=reduced_paths, string="100|111>_b")) == str(counts))
 
