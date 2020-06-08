@@ -15,5 +15,5 @@ In order to use it you just need to add the path to photonic to your PYTHONPATH
 We recommend to use [qulacs](https://github.com/qulacs) as quantum backend within `tequila`
 
 # Trouble, Comments or Ideas?  
-Please let us know over github or email (see arxiv link above) :-)
+Please let us know over github or email (see arxiv link above or [here](https://www.matter.toronto.edu/people#PostDocs) ) :-)
 
