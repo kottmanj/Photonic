@@ -517,6 +517,30 @@ class PhotonicSetup:
         # return self for chaining
         return self
 
+
+    def add_edge(self, path_a: str, path_b: str, i:int, j:int, omega, steps: int = 1, *args, **kwargs):
+        """
+        Add an edge between path a and path b
+        creating photons in |i>_a (x) |j>_b where i,j are the internal degrees of freedom (modes)
+        """
+        assert (len(self.paths[path_a]) == len(self.paths[path_b]))
+        assert (self.paths[path_a].keys() == self.paths[path_b].keys())
+
+        # convenience
+        a = self.paths[path_a]
+        b = self.paths[path_b]
+
+        generator = creation(qubits=a[i].qubits) * creation(qubits=b[j].qubits)
+        generator -= anihilation(qubits=a[i].qubits) * anihilation(qubits=b[j].qubits)
+
+        result = tq.gates.Trotterized(generators=[1.0j*generator], steps=steps, angles=[omega])
+        self._setup += result
+        self._abstract_setup += [AbstractElement(name="Edge(\\omega)", paths=[path_a, path_b])]
+
+        # return self for chaining
+        return self
+
+
     def prepare_unary_type_state(self, state: PhotonicStateVector, daggered: bool = False):
         """
         This will do some calculations, so only use it to debug
