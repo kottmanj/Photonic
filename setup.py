@@ -4,11 +4,11 @@ import os
 
 setup(
     name='photonic',
-    version="XXXX",
+    version="1.0",
     author='Jakob S. Kottmann',
     author_email='jakob.kottmann@gmail.com',
-    install_requires=requirements,
-    packages=find_packages(include=['photonic']),
+    install_requires= ['tequila @ git+https://github.com/aspuru-guzik-group/tequila.git@master-setup-fix#egg=tequila' ],
+    packages=find_packages(where=['src']),
     package_dir={'': 'photonic'},
     include_package_data=True,
     package_data={
