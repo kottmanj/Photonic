@@ -10,8 +10,4 @@ setup(
     install_requires= ['tequila @ git+https://github.com/aspuru-guzik-group/tequila.git@master-setup-fix#egg=tequila' ],
     packages=find_packages(where='src'),
     package_dir={'': 'src'}
-    #include_package_data=True,
-    #package_data={
-    #    '': [os.path.join('photonic')]
-    #}
 )
