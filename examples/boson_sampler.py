@@ -5,7 +5,7 @@ import numpy
 import json
 
 def simulate_crespi_setup(trotter_steps=5, initial_state=None, samples=None, bs_parameters=None, phases=None):
-   
+    print("ASDASDASDASDASDASDASDASDASDASDASDASDASDASDASD")   
     # Default is the same as in the Paper
     if bs_parameters is None:
         bs_parameters = [0.19,0.55,0.4,0.76,0.54,0.95,0.48,0.99,0.51,0.44]
@@ -81,6 +81,6 @@ def simulate_crespi_setup(trotter_steps=5, initial_state=None, samples=None, bs_
     message_dict["distribution"] = distribution
     message_dict["parameters"] = {"trotter_steps":trotter_steps, "samples":samples, "initial_state":str(initial_state)}
     
-    with open("bs_distribution.json",'w') as f:
+    with open("distribution.json",'w') as f:
         f.write(json.dumps(message_dict, indent=2))
 
