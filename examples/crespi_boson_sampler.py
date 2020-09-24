@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
     checksums = []
     data= []
-    for trotter_steps in [10]: # [1, 5, 10, 20, 40, 80, 160, 320]:
+    for trotter_steps in [5]: # [1, 5, 10, 20, 40, 80, 160, 320]:
 
         setup = photonic.PhotonicSetup(pathnames=[a, b, c, d, e], S=S, qpm=qpm)
 
@@ -137,7 +137,7 @@ if __name__ == "__main__":
         setup.add_beamsplitter(path_a=a, path_b=b, t=bs_parameters[9], phi=0, steps=trotter_steps)
 
         result = setup.simulate_wavefunction()
-
+        print("full wfn = ", result)
         print("simulated wavefunction is:\n", result)
 
         all_three_photon_states = filter_three_photon_counts(result)
