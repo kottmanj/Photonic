@@ -88,10 +88,11 @@ if __name__ == "__main__":
     # In case you're beeing curious: E0 gives you information about the countrate of your setup
     # So in prinicple that can be optimized as well
     variables = {'t':1.0, 'angle0': 0.5, 'angle1': -1.0}
-    E = tq.simulate(O, variables)
+    F = tq.simulate(O, variables)
+    print("Optimimal Angles: ", variables)
     print("E0=", tq.simulate(E0, variables))
     print("E1=", tq.simulate(E1, variables))
-    print("O=", E)
+    print("F=-E0/E1=", -F)
 
     # initialize starting conditions you want to have
     # this one here is not unrealistic and will lead to convergence
@@ -119,6 +120,3 @@ if __name__ == "__main__":
     # convenience plots
     result.history.plot("energies", filename="history_energies.pdf")
     result.history.plot("angles", filename="history_angles.pdf")
-
-                                                            
-

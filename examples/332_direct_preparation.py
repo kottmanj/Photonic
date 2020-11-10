@@ -1,12 +1,11 @@
 from photonic import PhotonicSetup
 
-# Directly prepare the 332 state
-# Using quantum gates
+# Directly prepare the 332 state in the digital encoding using quantum gates
 # This is used in the the last part of the optimization
-# This is not the optical setup
+# Note that this is not the optical setup
 
 if __name__ == "__main__":
-    S = 1  # Modes will run from -S ... 0 ... +S
+    S = 1  # Modes will run from -S ... 0 ... +S (orbital angular momentum)
     qpm = 2  # Qubits per mode
 
     setup = PhotonicSetup(pathnames=['a', 'b', 'c'], S=S, qpm=qpm)
@@ -16,5 +15,6 @@ if __name__ == "__main__":
 
     wfn = setup.simulate_wavefunction()
 
-    print("|332> = ", wfn)
+    print("Photonic Wavefunction = ", wfn)
+    print("Qubit Wavefunction = ", wfn.state)
 

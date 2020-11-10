@@ -2,10 +2,8 @@
 Here we creating Hong-Ou-Mandel States with a single beam splitter
 In this example the distribution of the wavefunction is simulated with discrete counts as result
 You will need some trotter steps to get good fidelities
-
 I assume that the Trotter decomposition can be improved to get better results (currently the two target states
 are asymetric)
-
 Count will differ from run to run and by how you set samples and trotter step
 """
 
@@ -54,6 +52,3 @@ if __name__ == "__main__":
     print("photon counts:\n", pcounts)
 
     pcounts.plot(title="HOM-Counts for initial state "+ initial_state)
-
-
-
