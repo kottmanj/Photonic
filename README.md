@@ -3,7 +3,9 @@
 Illustrative examples for the optimization of photonic setups with digital quantum computers  
 See our [preprint](https://arxiv.org/abs/2006.03075) for more information  
 
-The calculations from the paper can be found under examples
+The calculations from the paper can be found under examples.  
+
+In [slides.pdf](slides.pdf) you can find the slides of a presentation about the topic.  
 
 # Dependencies
 You will need the `tequila` package  
